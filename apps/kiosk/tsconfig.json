@@ -1,4 +1,4 @@
 {
-  "extends": "@pmg/config/tsconfig/react",
+  "extends": "../../packages/config/tsconfig.react.json",
   "include": ["src"]
 }

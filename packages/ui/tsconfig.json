@@ -1,5 +1,5 @@
 {
-  "extends": "@pmg/config/tsconfig/react",
+  "extends": "../config/tsconfig.react.json",
   "compilerOptions": {
     "outDir": "dist",
     "rootDir": "src",
