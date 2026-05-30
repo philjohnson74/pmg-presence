@@ -88,17 +88,21 @@ jobs:
           key: turbo-${{ github.sha }}
           restore-keys: turbo-
       - run: pnpm test
+      # Generate coverage report for SonarCloud; thresholds skipped until Phase 1+
+      - run: pnpm --filter @pmg/api test -- --coverage
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: coverage
           path: apps/api/coverage/lcov.info
+          if-no-files-found: warn
 
   sonar:
     name: SonarCloud
     needs: unit
     runs-on: ubuntu-latest
-    # Requires SONAR_TOKEN secret configured in repo settings
+    # Non-blocking until SONAR_TOKEN is configured in repo Settings → Secrets
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
         with:
