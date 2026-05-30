@@ -2,13 +2,16 @@
 import eslint from '@eslint/js';
 import tseslint from 'typescript-eslint';
 
-/** @param {string[]} tsconfigPaths */
-export function createConfig(tsconfigPaths) {
+/**
+ * Base ESLint flat config for all PMG packages.
+ * Each package's eslint.config.js calls this and may add ignores or overrides.
+ * Type-aware rules use the tsconfig.json in the package root (projectService auto-discovers it).
+ */
+export function createConfig() {
   return tseslint.config(eslint.configs.recommended, ...tseslint.configs.recommended, {
     languageOptions: {
       parserOptions: {
         projectService: true,
-        tsconfigRootDir: import.meta.dirname,
       },
     },
     rules: {

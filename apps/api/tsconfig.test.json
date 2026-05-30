@@ -2,7 +2,7 @@
   "extends": "@pmg/config/tsconfig/node",
   "compilerOptions": {
     "noEmit": true,
-    "tsBuildInfoFile": "dist/.tsbuildinfo"
+    "rootDir": "."
   },
   "include": ["src", "test"]
 }
