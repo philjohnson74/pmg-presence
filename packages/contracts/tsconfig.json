@@ -1,0 +1,9 @@
+{
+  "extends": "@pmg/config/tsconfig/node",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+    "tsBuildInfoFile": "dist/.tsbuildinfo"
+  },
+  "include": ["src"]
+}

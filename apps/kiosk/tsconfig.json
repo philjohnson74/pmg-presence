@@ -1,0 +1,4 @@
+{
+  "extends": "@pmg/config/tsconfig/react",
+  "include": ["src"]
+}

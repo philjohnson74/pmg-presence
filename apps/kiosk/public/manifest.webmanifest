@@ -1,0 +1,21 @@
+{
+  "name": "PMG Presence — Reception",
+  "short_name": "PMG Reception",
+  "description": "Peacocks Medical Group visitor and staff check-in kiosk",
+  "start_url": "/",
+  "display": "fullscreen",
+  "background_color": "#ffffff",
+  "theme_color": "#0b2551",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
