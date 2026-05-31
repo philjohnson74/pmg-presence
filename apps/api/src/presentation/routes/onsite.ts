@@ -32,6 +32,19 @@ export interface OnsiteRouterDeps {
 export function makeOnsiteRouter(deps: OnsiteRouterDeps): Router {
   const router = Router();
 
+  // Public — kiosk visitor checkout picker (data-minimised: id + name only)
+  router.get('/onsite/visitors', (_req, res, next) => {
+    deps.onsiteProjection
+      .getSnapshot()
+      .then((snapshot) => {
+        const visitors = snapshot.occupants
+          .filter((o) => o.personType === 'visitor')
+          .map((o) => ({ personId: o.personId, displayName: o.displayName }));
+        return res.json({ visitors });
+      })
+      .catch((err: unknown) => next(err));
+  });
+
   router.get('/onsite', deps.requireAuth, deps.requireAdminOrMarshal, (req, res, next) => {
     const parsed = onsiteQuerySchema.safeParse(req.query);
     if (!parsed.success) {
