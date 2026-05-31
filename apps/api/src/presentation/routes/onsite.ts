@@ -5,6 +5,7 @@ import type { OnsiteProjectionService } from '../../application/services/onsite-
 import type { FireEventRepository, RollCallRepository } from '../../domain/repositories.js';
 import type { JwtServicePort, SseBrokerPort } from '../../domain/ports.js';
 import { ConflictError, ForbiddenError, UnauthorisedError, ValidationError } from '../../application/errors.js';
+import { rollcallAccountedCounter } from '../../infrastructure/telemetry/metrics.js';
 
 const onsiteQuerySchema = z.object({
   type: z.enum(['employee', 'patient', 'visitor']).optional(),
@@ -128,6 +129,7 @@ export function makeOnsiteRouter(deps: OnsiteRouterDeps): Router {
       .then(async (fireEvent) => {
         if (!fireEvent) throw new ConflictError('No active fire event');
         const entry = await deps.rollCall.markAccounted(fireEvent.id, personId, accountedByName);
+        rollcallAccountedCounter.inc();
         deps.broker.broadcast({
           event: 'rollcall.updated',
           data: {

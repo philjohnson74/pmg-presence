@@ -1,11 +1,13 @@
 import type { RequestHandler } from 'express';
 import type { JwtServicePort } from '../../domain/ports.js';
 import { UnauthorisedError } from '../../application/errors.js';
+import { authFailuresCounter } from '../../infrastructure/telemetry/metrics.js';
 
 export function makeRequireAuth(jwtService: JwtServicePort): RequestHandler {
   return (req, _res, next) => {
     const authHeader = req.headers['authorization'];
     if (!authHeader?.startsWith('Bearer ')) {
+      authFailuresCounter.inc({ reason: 'missing_token' });
       return next(new UnauthorisedError('Missing or malformed Authorization header'));
     }
 
@@ -20,6 +22,7 @@ export function makeRequireAuth(jwtService: JwtServicePort): RequestHandler {
       };
       next();
     } catch {
+      authFailuresCounter.inc({ reason: 'invalid_token' });
       next(new UnauthorisedError('Invalid or expired token'));
     }
   };

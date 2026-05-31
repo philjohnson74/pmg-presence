@@ -4,6 +4,7 @@ import rateLimit from 'express-rate-limit';
 import type { PatientLookupResponse } from '@pmg/contracts';
 import type { ClinicalSystemPort } from '../../domain/ports.js';
 import { ValidationError } from '../../application/errors.js';
+import { patientLookupCounter } from '../../infrastructure/telemetry/metrics.js';
 
 const querySchema = z.object({
   name: z.string().min(1).max(200),
@@ -38,7 +39,11 @@ export function makePatientsRouter(clinicalSystem: ClinicalSystemPort): Router {
     clinicalSystem
       .lookup(name, dob)
       .then((match) => {
-        if (!match) return res.json({ match: false } satisfies PatientLookupResponse);
+        if (!match) {
+          patientLookupCounter.inc({ outcome: 'miss' });
+          return res.json({ match: false } satisfies PatientLookupResponse);
+        }
+        patientLookupCounter.inc({ outcome: 'match' });
         return res.json({
           match: true,
           patientId: match.patientId,

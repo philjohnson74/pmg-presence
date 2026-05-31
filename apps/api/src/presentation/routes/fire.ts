@@ -19,12 +19,14 @@ export interface FireRouterDeps {
 export function makeFireRouter(deps: FireRouterDeps): Router {
   const router = Router();
 
-  // Hard rate limit for public kiosk trigger path
+  // Rate limit for public kiosk trigger path — 20/min allows repeated E2E test runs
+  // while still guarding against accidental rapid-fire from the kiosk UI.
   const triggerRateLimit = rateLimit({
     windowMs: 60 * 1000,
-    max: 5,
+    max: 20,
     standardHeaders: true,
     legacyHeaders: false,
+    message: { type: 'about:blank', title: 'Too Many Requests', status: 429 },
   });
 
   // POST /api/fire/trigger — public (kiosk) or admin

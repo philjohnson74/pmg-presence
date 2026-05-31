@@ -4,6 +4,7 @@ import type { PushPort, SseBrokerPort } from '../../domain/ports.js';
 import type { OnsiteProjectionService } from '../services/onsite-projection-service.js';
 import type { ExpectedPresenceService } from '../services/expected-presence-service.js';
 import { ConflictError } from '../errors.js';
+import { fireEventsCounter } from '../../infrastructure/telemetry/metrics.js';
 
 export interface TriggerFireEventDeps {
   fireEvents: FireEventRepository;
@@ -72,6 +73,8 @@ export class TriggerFireEventUseCase {
       fireEventId: fireEvent.id,
       triggeredAt: fireEvent.triggeredAt,
     });
+
+    fireEventsCounter.inc();
 
     return { fireEvent, entries };
   }

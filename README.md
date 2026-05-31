@@ -40,10 +40,10 @@ phone must show who is physically present, even offline, the moment the alarm so
 | **Phase 5** | Patient lookup | ✅ Complete |
 | **Phase 6** | Fire trigger + roll-call API + SSE | ✅ Complete |
 | **Phase 7** | Admin Portal UI | ✅ Complete |
-| **Phase 8** | Reception Kiosk UI | 🔲 Pending |
+| **Phase 8** | Reception Kiosk UI | ✅ Complete |
 | **Phase 9** | Employee PWA UI | ✅ Complete |
-| **Phase 10** | Offline (Service Worker + IndexedDB) | 🔲 Pending |
-| **Phase 11** | Observability, OpenAPI, E2E, polish | 🔲 Pending |
+| **Phase 10** | Offline (Service Worker + IndexedDB) | ✅ Complete |
+| **Phase 11** | Observability, OpenAPI, E2E, polish | ✅ Complete |
 
 See [docs/08-implementation-plan.md](docs/08-implementation-plan.md) for full phase detail.
 
@@ -61,7 +61,9 @@ Services on fixed ports:
 
 | Service | URL |
 |---------|-----|
-| API + Swagger | http://localhost:4000 |
+| API | http://localhost:4000 |
+| Swagger UI | http://localhost:4000/api/docs |
+| Prometheus metrics | http://localhost:4000/metrics |
 | Admin Portal | http://localhost:5173 |
 | Reception Kiosk | http://localhost:5174 |
 | Employee PWA | http://localhost:5175 |
@@ -81,9 +83,29 @@ pnpm --filter @pmg/api test
 # Single test file
 pnpm --filter @pmg/api test -- src/presentation/routes/health.test.ts
 
-# E2E (requires stack running)
+# E2E — starts servers automatically if not already running
 pnpm test:e2e
+
+# E2E with the stack already running (CI / manual)
+pnpm dev   # in one terminal
+pnpm test:e2e   # in another
 ```
+
+## Observability
+
+`/metrics` exposes a Prometheus scrape endpoint with the following metrics:
+
+| Metric | Type | Labels |
+|--------|------|--------|
+| `pmg_checkin_total` | Counter | `method`, `direction`, `personType` |
+| `pmg_patient_lookup_total` | Counter | `outcome` (match/miss) |
+| `pmg_fire_events_total` | Counter | — |
+| `pmg_rollcall_accounted_total` | Counter | — |
+| `pmg_auth_failures_total` | Counter | `reason` |
+| `pmg_occupancy_current` | Gauge | `personType` |
+| `pmg_sse_connections` | Gauge | — |
+
+For a production deployment, point a Prometheus scrape job at `:4000/metrics` and wire Grafana dashboards over it. Traces can be exported via OTLP by adding `@opentelemetry/exporter-otlp-grpc` to the telemetry init.
 
 ## Tech stack
 
