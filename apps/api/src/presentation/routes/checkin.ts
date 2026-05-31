@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import type { CheckInRequest } from '@pmg/contracts';
+import type { Request, Response, NextFunction } from 'express';
+import type { CheckInRequest, Direction } from '@pmg/contracts';
 import { CheckInEventUseCase, type CheckInEventDeps } from '../../application/use-cases/check-in-event.js';
 import { ValidationError } from '../../application/errors.js';
 
@@ -47,37 +48,28 @@ const checkInBodySchema = z.object({
   manual: manualInputSchema.optional(),
 });
 
+function makeHandler(useCase: CheckInEventUseCase, direction: Direction) {
+  return (req: Request, res: Response, next: NextFunction) => {
+    const parsed = checkInBodySchema.safeParse(req.body);
+    if (!parsed.success) {
+      return next(new ValidationError(JSON.stringify(parsed.error.flatten())));
+    }
+    const input = parsed.data as CheckInRequest;
+    const requestedBy = (req as { user?: { sub: string } }).user?.sub ?? 'kiosk';
+
+    useCase
+      .execute(input, direction, requestedBy)
+      .then((result) => res.status(result.debounced ? 200 : 201).json(result))
+      .catch((err: unknown) => next(err));
+  };
+}
+
 export function makeCheckInRouter(deps: CheckInEventDeps): Router {
   const router = Router();
   const useCase = new CheckInEventUseCase(deps);
 
-  router.post('/checkin', (req, res, next) => {
-    const parsed = checkInBodySchema.safeParse(req.body);
-    if (!parsed.success) {
-      return next(new ValidationError(JSON.stringify(parsed.error.flatten())));
-    }
-    const input = parsed.data as CheckInRequest;
-    const requestedBy = (req as { user?: { sub: string } }).user?.sub ?? 'kiosk';
-
-    useCase
-      .execute(input, 'in', requestedBy)
-      .then((result) => res.status(result.debounced ? 200 : 201).json(result))
-      .catch((err: unknown) => next(err));
-  });
-
-  router.post('/checkout', (req, res, next) => {
-    const parsed = checkInBodySchema.safeParse(req.body);
-    if (!parsed.success) {
-      return next(new ValidationError(JSON.stringify(parsed.error.flatten())));
-    }
-    const input = parsed.data as CheckInRequest;
-    const requestedBy = (req as { user?: { sub: string } }).user?.sub ?? 'kiosk';
-
-    useCase
-      .execute(input, 'out', requestedBy)
-      .then((result) => res.status(result.debounced ? 200 : 201).json(result))
-      .catch((err: unknown) => next(err));
-  });
+  router.post('/checkin', makeHandler(useCase, 'in'));
+  router.post('/checkout', makeHandler(useCase, 'out'));
 
   return router;
 }

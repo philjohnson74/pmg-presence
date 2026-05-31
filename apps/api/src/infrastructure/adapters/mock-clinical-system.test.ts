@@ -1,12 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { Patient } from '../../domain/entities.js';
 import { MockClinicalSystem } from './mock-clinical-system.js';
-
-const PATIENTS: Patient[] = [
-  { id: 'pat-001', name: 'Joan Webb',      dateOfBirth: '1951-03-14', patientReference: 'PMG-OUT-4471', clinicalSystemId: 'CLIN-88201' },
-  { id: 'pat-003', name: 'Renée Fontaine', dateOfBirth: '1989-06-30', patientReference: 'PMG-OUT-4473', clinicalSystemId: 'CLIN-88233' },
-  { id: 'pat-004', name: 'Owen Pritchard', dateOfBirth: '2011-09-21', patientReference: 'PMG-OUT-4474', clinicalSystemId: 'CLIN-88240' },
-];
+import { PATIENTS } from '../seed/seed-data.js';
 
 describe('MockClinicalSystem', () => {
   const system = new MockClinicalSystem(PATIENTS);

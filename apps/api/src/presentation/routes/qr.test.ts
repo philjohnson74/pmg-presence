@@ -2,37 +2,8 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import request from 'supertest';
 import { buildTestContainer } from '../../container.js';
 import { createServer } from '../server.js';
-import type { Employee } from '../../domain/entities.js';
 import type { QrTokenResponse } from '@pmg/contracts';
-
-const EMPLOYEE: Employee = {
-  id: 'emp-001',
-  name: 'Gary Cooper',
-  email: 'gary@test.com',
-  role: 'employee',
-  employeeNumber: 'PMG-1001',
-  qrCodeToken: 'qr-seed-gary',
-  active: true,
-  createdAt: '2026-01-01T00:00:00.000Z',
-  updatedAt: '2026-01-01T00:00:00.000Z',
-};
-
-const ADMIN: Employee = {
-  id: 'emp-admin',
-  name: 'David Admin',
-  email: 'admin@test.com',
-  role: 'admin',
-  employeeNumber: 'PMG-0001',
-  qrCodeToken: 'qr-seed-admin',
-  active: true,
-  createdAt: '2026-01-01T00:00:00.000Z',
-  updatedAt: '2026-01-01T00:00:00.000Z',
-};
-
-async function getToken(app: ReturnType<typeof createServer>, userId: string): Promise<string> {
-  const res = await request(app).post('/api/auth/login').send({ userId });
-  return (res.body as { token: string }).token;
-}
+import { EMPLOYEE, ADMIN, getToken } from './test-fixtures.js';
 
 // ─── GET /api/employees/me/qr ─────────────────────────────────────────────────
 
@@ -49,7 +20,7 @@ describe('GET /api/employees/me/qr', () => {
   });
 
   it('returns a signed QR token for an authed employee (200)', async () => {
-    const token = await getToken(app, 'emp-001');
+    const token = await getToken(app, EMPLOYEE.id);
     const res = await request(app)
       .get('/api/employees/me/qr')
       .set('Authorization', `Bearer ${token}`);
@@ -81,7 +52,7 @@ describe('GET /api/employees/me/qr', () => {
   });
 
   it('issued QR token can be used to check in (method:qr)', async () => {
-    const authToken = await getToken(app, 'emp-001');
+    const authToken = await getToken(app, EMPLOYEE.id);
     const qrRes = await request(app)
       .get('/api/employees/me/qr')
       .set('Authorization', `Bearer ${authToken}`);
@@ -103,7 +74,7 @@ describe('GET /api/employees/me/qr', () => {
   });
 
   it('replayed QR token returns the same event debounced (200)', async () => {
-    const authToken = await getToken(app, 'emp-001');
+    const authToken = await getToken(app, EMPLOYEE.id);
     const qrRes = await request(app)
       .get('/api/employees/me/qr')
       .set('Authorization', `Bearer ${authToken}`);
@@ -131,7 +102,7 @@ describe('GET /api/employees/me/qr', () => {
 
   it('expired QR token is rejected (400)', async () => {
     const expiredToken = container.jwtService.signRaw(
-      { sub: 'emp-001', typ: 'qr', en: 'PMG-1001', jti: 'expired-jti' },
+      { sub: EMPLOYEE.id, typ: 'qr', en: EMPLOYEE.employeeNumber, jti: 'expired-jti' },
       new Date(Date.now() - 1_000),
     );
 
