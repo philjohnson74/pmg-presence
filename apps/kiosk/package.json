@@ -13,8 +13,11 @@
   "dependencies": {
     "@pmg/contracts": "workspace:*",
     "@pmg/ui": "workspace:*",
+    "@zxing/browser": "^0.1.5",
+    "qrcode.react": "^4.2.0",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.29.0"
   },
   "devDependencies": {
     "@pmg/config": "workspace:*",

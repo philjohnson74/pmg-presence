@@ -116,6 +116,36 @@ All scripts are orchestrated by **Turborepo** (`turbo.json`); run them from the 
 - **Tests** — 12 new integration tests: match, case-insensitivity, diacritic normalisation, whitespace tolerance, miss (unknown patient), miss (wrong DOB), data-minimisation assertions, 4 validation error cases (missing name, missing dob, invalid format, future date), rate-limit enforcement (429 on request 6).
 - **Total tests** — 172 passing.
 
+## What Phase 8 delivered
+
+- **`GET /api/onsite/visitors`** (`presentation/routes/onsite.ts`) — new public route (no auth); returns checked-in visitors as `{ visitors: [{personId, displayName}] }` — data-minimised for the kiosk checkout picker.
+- **`apps/kiosk`** rebuilt from the Phase 0 skeleton into a full PWA (`react-router-dom` v6, `@zxing/browser`, `qrcode.react`):
+  - **`/`** — home/attract screen: PMG navy background, 4 large action tiles (Employee, Visitor, Patient, Sign Out), persistent Fire Alarm button with red border at the bottom.
+  - **`/employee`** — 3-tab sign-in/out:
+    - *Email* — enter work email → Sign In or Sign Out (`method:'email'`).
+    - *Scan QR* — live camera feed via `@zxing/browser`; client-side 3s debounce on top of server debounce; scan-success posts to `/api/checkin` (`method:'qr'`). Graceful camera-unavailable fallback message.
+    - *Find Me* — manual fallback for no-email/no-phone staff; accepts employee number (preferred) or name; resolves `PMG-XXXX` prefix automatically; `method:'manual'`, audit-flagged, amber warning shown to user.
+  - **`/visitor`** — two tabs:
+    - *New visitor* — full form: name (required), email (optional), host (required), reason (required, free text), visit category quick-pick (6 options → `visitCategory`), duration picker (*Just today* / *Multiple days* with end-date picker). Multi-day submissions trigger `VisitBooking` creation and show a **VisitorPassCard** (QR code via `QRCodeSVG` + 6-char code + validity date) before returning to home.
+    - *Returning (have a pass)* — surname + pass code → `GET /api/visits/returning` → confirm-card → `POST /api/checkin` with visitor's ID.
+  - **`/checkout`** — calls `GET /api/onsite/visitors`; shows a picker of currently checked-in visitors; tapping signs them out via `POST /api/checkout` with `personId + personType`.
+  - **`/patient`** — 3-step wizard: (1) name + DOB lookup form → (2) confirm-card (name + reference) or (3) manual fallback with amber "reception to verify" notice; uses `GET /api/patients/lookup` + `POST /api/checkin` (`method:'patient-lookup'` or `method:'manual'`).
+  - **`/fire`** — two deliberate steps: warning screen → "Confirm Emergency" → `POST /api/fire/trigger` → full-screen red evacuation lock (`EVACUATION IN PROGRESS`). Discreet "Administrator: stand down" affordance for demo resolution.
+- **`KioskProvider`** (`context/kiosk-context.tsx`) — React context managing fire-active state (localStorage-persisted across refreshes) and idle timer (60s; resets on `pointerdown/keydown/touchstart`; calls `onIdle` → navigate to `/`).
+- **`SuccessScreen`** (`components/success-screen.tsx`) — shared branded success screen (green ✓, person icon, name); auto-returns to home after 4s; shown after every check-in/out.
+- **`apps/kiosk/src/lib/api.ts`** — typed public fetch wrapper (no auth token); functions: `checkIn`, `checkOut`, `patientLookup`, `returningVisitorLookup`, `fetchCheckedInVisitors`, `triggerFire`.
+- **Total tests** — 205 passing (no new API tests; the single new API route is covered by typecheck + manual verification).
+
+### Known decisions from Phase 8
+
+- **`GET /api/onsite/visitors` is intentionally public** — returns only `personId + displayName` for currently checked-in visitors; this is the minimal data needed for the kiosk checkout picker. No emails, visit history, or categories are exposed.
+- **Fire state persisted in localStorage** — kiosk fire lock survives page refreshes. The kiosk has no access to protected fire-event endpoints (no JWT), so clearing the lock requires the discreet admin stand-down button rather than polling the API.
+- **QR scanner requires camera permission** — `@zxing/browser` requests camera access on mount; if denied or unavailable (e.g. laptop without camera), a friendly fallback message directs users to the Email or Find Me tab. This is not an error state.
+- **Client-side scan debounce (3s) on top of server debounce (5s)** — prevents the QR scanner from firing multiple API calls for a single scan. The server debounce is the authoritative guard; the client debounce reduces unnecessary requests.
+- **Idle timer resets on pointer/keyboard/touch events** — 60s window. Navigates to `/` via the `KioskProvider.onIdle` callback, which is bound in `RouterWrapper` so it has access to `useNavigate`.
+- **`VisitorPassCard` shown before success screen for multi-day visits** — the pass QR + code is the key deliverable for returning visitors; showing it before the auto-return gives the visitor time to photograph/note it.
+- **`react-router-dom` v6 future flag warnings** — two console warnings about v7 flag changes; harmless, can be silenced with `v7_startTransition` and `v7_relativeSplatPath` future flags on `<BrowserRouter>` if desired.
+
 ## What Phase 7 delivered
 
 - **`GET /api/employees`** + **`POST /api/employees`** + **`PATCH /api/employees/:id`** (`presentation/routes/employees.ts`) — admin-only CRUD routes. `POST` creates with optional `email`; `PATCH` patches name/email/role/active. `email` accepted as `null` or omitted at both create and update.
