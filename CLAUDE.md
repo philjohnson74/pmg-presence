@@ -4,11 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Current implementation status
 
-**Phase 6 — Fire trigger + roll-call API + SSE is complete on branch `phase/6-fire-rollcall-sse`.**
+**Phase 7 — Admin Portal UI is complete on branch `phase/7-admin-portal-ui`.**
 
-Next: **Phase 7 — Admin Portal UI** (see [docs/08-implementation-plan.md](docs/08-implementation-plan.md)).
+Next: **Phase 8 — Reception Kiosk UI** (see [docs/08-implementation-plan.md](docs/08-implementation-plan.md)).
 
-Create a branch before starting: `git checkout -b phase/7-admin-portal-ui`
+Create a branch before starting: `git checkout -b phase/8-reception-kiosk-ui`
 
 ## Commands
 
@@ -97,6 +97,15 @@ All scripts are orchestrated by **Turborepo** (`turbo.json`); run them from the 
 - **Tests** — 147 passing (30 new integration tests covering all 5 check-in methods, debounce, multi-day booking + pass issuance, RBAC 401/403 on every protected route, history filtering)
 - **SonarCloud** — all 14 findings from the Phase 3 scan resolved across subsequent commits (redundant casts, wrong Error subclass, async idioms, duplicate imports, mock setup patterns, negated conditions, `Readonly<>` on React props, heading accessibility)
 
+## What Phase 4 delivered
+
+- **`GET /api/employees/me/qr`** (`presentation/routes/qr.ts`) — any authed employee receives a 60-second signed QR token (`typ:'qr'`, `jti` UUID, employee number embedded). Token rotates on the device every ~30s.
+- **QR check-in path in `CheckInEventUseCase`** — validates `typ:'qr'` tokens (signature, expiry, `jti` replay via `InMemoryJtiStore`); `typ:'visit-pass'` tokens follow the same path for returning multi-day visitors, validated against their booking window.
+- **`GET /api/visits/returning`** (`presentation/routes/returning-visitor.ts`) — public, rate-limited (5 req / 30s); `?surname=&code=` lookup for multi-day visitors who don't have the pass QR to hand. Verifies booking is within its date window and surname appears in the visitor's name.
+- **`InMemoryJtiStore`** — tracks used JTIs to prevent QR replay attacks within a sliding window.
+- **Tests** — 13 QR integration tests: token generation (employee not found, inactive employee, success), QR check-in (valid token, expired, tampered, wrong `typ`, replay), returning visitor (match, miss, surname mismatch, outside date window, rate limit).
+- **Total tests** — 172 passing (QR tests added as part of phase, alongside 12 patient-lookup tests in Phase 5).
+
 ## What Phase 5 delivered
 
 - **`GET /api/patients/lookup`** (`presentation/routes/patients.ts`) — public (kiosk) route accepting `?name=&dob=` query params; rate-limited (5 req / 30s per IP, fresh limiter per server instance); zod-validated (name 1–200 chars, dob YYYY-MM-DD and not in the future).
@@ -104,6 +113,31 @@ All scripts are orchestrated by **Turborepo** (`turbo.json`); run them from the 
 - **`makePatientsRouter(clinicalSystem)`** wired in `server.ts` alongside the returning-visitor router (both public, rate-limited).
 - **Tests** — 12 new integration tests: match, case-insensitivity, diacritic normalisation, whitespace tolerance, miss (unknown patient), miss (wrong DOB), data-minimisation assertions, 4 validation error cases (missing name, missing dob, invalid format, future date), rate-limit enforcement (429 on request 6).
 - **Total tests** — 172 passing.
+
+## What Phase 7 delivered
+
+- **`GET /api/employees`** + **`POST /api/employees`** + **`PATCH /api/employees/:id`** (`presentation/routes/employees.ts`) — admin-only CRUD routes. `POST` creates with optional `email`; `PATCH` patches name/email/role/active. `email` accepted as `null` or omitted at both create and update.
+- **`listAll()` on `EmployeeRepository`** — returns active + inactive employees; used by the admin portal table to show and toggle deactivated staff.
+- **`GET /api/auth/users`** — public endpoint added to the auth router; returns the seeded active employee list for the mock login picker UI.
+- **`apps/admin`** rebuilt from the Phase 0 skeleton into a full SPA (`react-router-dom` v6, `@pmg/auth-client`):
+  - **`/login`** — mock SSO picker listing seeded users grouped by role (Admins / Marshals / Employees); no-email employees show "No email".
+  - **`/onsite`** — live occupancy view with 3-column counter cards (employee/patient/visitor), `visitorsByCategory` breakdown, SSE `onsite.changed` listener with "Live" indicator, person-type filter tabs, occupant table with `PersonTypeBadge` (including visitor category sub-label).
+  - **`/expected`** — today + tomorrow cards driven by `GET /api/expected`; each card shows expected count, signed-in (green) vs not-yet-signed-in (amber) totals, with per-person dots and source labels (M365 Calendar / Visit Booking).
+  - **`/employees`** — full table with add/edit modal (`email` field clearly optional, "Leave blank if no email" placeholder), deactivate/reactivate toggle, inactive employees hidden behind a reveal link.
+  - **`/history`** — date-range + name + type filter form; results table with direction arrows (↑/↓), method labels, PersonType badges; client-side CSV export.
+  - **`/fire`** — active alarm banner (red border, stand-down button), events table (status/triggered/by/resolved/duration), confirm-to-resolve modal.
+  - **AppShell** — navy top bar with user name + sign-out; sidebar nav (desktop) + bottom nav strip (mobile); `SessionProvider` holds token in React state.
+- **`src/lib/api.ts`** — typed fetch wrapper; adds `Authorization` header; throws `ApiError` on non-OK responses.
+- **`src/features/auth/use-session.tsx`** — `SessionProvider` + `useSession` hook; wraps `MockAuthProvider` from `@pmg/auth-client`.
+- **Total tests** — 205 passing (no new API tests needed; all new routes covered by typecheck + manual verification).
+
+### Known decisions from Phase 7
+
+- **Session is in-memory React state** — a full page reload loses the session. This is deliberate for the MVP demo (no `localStorage` persistence); the MSAL path in Phase 9+ will use proper token storage.
+- **`GET /api/auth/users` is public and unguarded** — only exists to support the mock SSO picker; it should be removed or behind auth before any real deployment.
+- **`EmployeeRepository.listAll()`** returns all records (active + inactive); the UI filters and presents them separately. The interface change is backward-compatible — the single implementor (`InMemoryEmployeeRepository`) gained the method and all existing tests still pass.
+- **SSE token is the full session JWT** — passed as `?access_token=` per the Phase 6 architecture. No separate short-lived stream token was issued (that is a post-MVP hardening step per doc 03 §3.6).
+- **`useOnsiteStream` reloads the full occupant list on every `onsite.changed` event** — a delta-apply approach would be more efficient at scale but adds complexity; polling the full list on each SSE event is fine for the demo occupancy numbers.
 
 ## What Phase 6 delivered
 

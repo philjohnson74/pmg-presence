@@ -28,6 +28,10 @@ export class InMemoryEmployeeRepository implements EmployeeRepository {
     return [...this.store.values()].filter((e) => e.active);
   }
 
+  async listAll(): Promise<Employee[]> {
+    return [...this.store.values()];
+  }
+
   async create(input: NewEmployee): Promise<Employee> {
     const now = new Date().toISOString();
     const employee: Employee = {
