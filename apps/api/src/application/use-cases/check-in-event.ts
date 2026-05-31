@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { randomInt, randomUUID } from 'node:crypto';
 import type { Direction, PersonType, VisitCategory } from '@pmg/contracts';
 import type { CheckInRequest, CheckInResponse, VisitorPassResponse } from '@pmg/contracts';
 import type {
@@ -29,7 +29,7 @@ const PASS_CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 function generatePassCode(): string {
   return Array.from(
     { length: 6 },
-    () => PASS_CODE_CHARS[Math.floor(Math.random() * PASS_CODE_CHARS.length)],
+    () => PASS_CODE_CHARS[randomInt(PASS_CODE_CHARS.length)],
   ).join('');
 }
 
