@@ -97,6 +97,15 @@ All scripts are orchestrated by **Turborepo** (`turbo.json`); run them from the 
 - **Tests** — 147 passing (30 new integration tests covering all 5 check-in methods, debounce, multi-day booking + pass issuance, RBAC 401/403 on every protected route, history filtering)
 - **SonarCloud** — all 14 findings from the Phase 3 scan resolved across subsequent commits (redundant casts, wrong Error subclass, async idioms, duplicate imports, mock setup patterns, negated conditions, `Readonly<>` on React props, heading accessibility)
 
+## What Phase 4 delivered
+
+- **`GET /api/employees/me/qr`** (`presentation/routes/qr.ts`) — any authed employee receives a 60-second signed QR token (`typ:'qr'`, `jti` UUID, employee number embedded). Token rotates on the device every ~30s.
+- **QR check-in path in `CheckInEventUseCase`** — validates `typ:'qr'` tokens (signature, expiry, `jti` replay via `InMemoryJtiStore`); `typ:'visit-pass'` tokens follow the same path for returning multi-day visitors, validated against their booking window.
+- **`GET /api/visits/returning`** (`presentation/routes/returning-visitor.ts`) — public, rate-limited (5 req / 30s); `?surname=&code=` lookup for multi-day visitors who don't have the pass QR to hand. Verifies booking is within its date window and surname appears in the visitor's name.
+- **`InMemoryJtiStore`** — tracks used JTIs to prevent QR replay attacks within a sliding window.
+- **Tests** — 13 QR integration tests: token generation (employee not found, inactive employee, success), QR check-in (valid token, expired, tampered, wrong `typ`, replay), returning visitor (match, miss, surname mismatch, outside date window, rate limit).
+- **Total tests** — 172 passing (QR tests added as part of phase, alongside 12 patient-lookup tests in Phase 5).
+
 ## What Phase 5 delivered
 
 - **`GET /api/patients/lookup`** (`presentation/routes/patients.ts`) — public (kiosk) route accepting `?name=&dob=` query params; rate-limited (5 req / 30s per IP, fresh limiter per server instance); zod-validated (name 1–200 chars, dob YYYY-MM-DD and not in the future).
