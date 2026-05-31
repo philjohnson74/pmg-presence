@@ -1,6 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { RollCallEntry, RollCallState, SseEvent } from '@pmg/contracts';
 import { ApiError, fetchRollCall, patchAccountedFor } from '../../lib/api.js';
+import {
+  addToOutbox,
+  clearCachedRollCall,
+  getCachedRollCall,
+  getOutbox,
+  putCachedRollCall,
+  removeFromOutbox,
+  updateCachedRollCallTimestamp,
+} from '../../offline/db.js';
 
 interface RollCallSnapshot {
   fireEventId: string;
@@ -10,7 +19,7 @@ interface RollCallSnapshot {
 
 export interface EvacuationStreamState {
   rollCall: RollCallSnapshot | null;
-  lastHeartbeat: Date | null;
+  lastSynced: Date | null;
   connected: boolean;
   markAccounted: (personId: string, accountedFor: boolean) => Promise<void>;
 }
@@ -20,11 +29,26 @@ export function useEvacuationStream(
   enabled: boolean,
 ): EvacuationStreamState {
   const [rollCall, setRollCall] = useState<RollCallSnapshot | null>(null);
-  const [lastHeartbeat, setLastHeartbeat] = useState<Date | null>(null);
+  const [lastSynced, setLastSynced] = useState<Date | null>(null);
   const [connected, setConnected] = useState(false);
   const esRef = useRef<EventSource | null>(null);
 
-  // On mount, check whether a fire event is already active
+  // Seed from IndexedDB cache on mount so the roll-call renders immediately offline
+  useEffect(() => {
+    if (!enabled) return;
+    void getCachedRollCall().then((cached) => {
+      if (cached) {
+        setRollCall({
+          fireEventId: cached.data.fireEventId,
+          triggeredAt: cached.data.triggeredAt,
+          entries: cached.data.entries,
+        });
+        setLastSynced(new Date(cached.updatedAt));
+      }
+    });
+  }, [enabled]);
+
+  // Live fetch on mount to check whether a fire event is already active
   useEffect(() => {
     if (!token || !enabled) return;
     fetchRollCall(token)
@@ -34,10 +58,16 @@ export function useEvacuationStream(
           triggeredAt: data.triggeredAt,
           entries: data.entries,
         });
+        setLastSynced(new Date());
+        void putCachedRollCall(data);
       })
       .catch((err: unknown) => {
-        // 409 = no active fire event — expected, not an error
-        if (err instanceof ApiError && err.status === 409) return;
+        // 409 = no active fire event; clear stale cache
+        if (err instanceof ApiError && err.status === 409) {
+          setRollCall(null);
+          void clearCachedRollCall();
+        }
+        // network error — keep the IDB-seeded state
       });
   }, [token, enabled]);
 
@@ -54,13 +84,22 @@ export function useEvacuationStream(
 
     es.addEventListener('heartbeat', (e: MessageEvent) => {
       const data = JSON.parse(e.data) as Extract<SseEvent, { event: 'heartbeat' }>['data'];
-      setLastHeartbeat(new Date(data.at));
+      const at = new Date(data.at);
+      setLastSynced(at);
       setConnected(true);
+      void updateCachedRollCallTimestamp();
     });
 
     es.addEventListener('fire.triggered', (e: MessageEvent) => {
       const data = JSON.parse(e.data) as Extract<SseEvent, { event: 'fire.triggered' }>['data'];
-      setRollCall({
+      const snapshot: RollCallSnapshot = {
+        fireEventId: data.fireEventId,
+        triggeredAt: data.triggeredAt,
+        entries: data.rollCall,
+      };
+      setRollCall(snapshot);
+      setLastSynced(new Date());
+      void putCachedRollCall({
         fireEventId: data.fireEventId,
         triggeredAt: data.triggeredAt,
         entries: data.rollCall,
@@ -69,6 +108,7 @@ export function useEvacuationStream(
 
     es.addEventListener('fire.resolved', () => {
       setRollCall(null);
+      void clearCachedRollCall();
     });
 
     es.addEventListener('rollcall.updated', (e: MessageEvent) => {
@@ -78,7 +118,7 @@ export function useEvacuationStream(
       >['data'];
       setRollCall((prev) => {
         if (!prev) return prev;
-        return {
+        const updated: RollCallSnapshot = {
           ...prev,
           entries: prev.entries.map((entry) =>
             entry.personId === data.personId
@@ -92,6 +132,13 @@ export function useEvacuationStream(
               : entry,
           ),
         };
+        // Persist updated roll-call to IDB
+        void putCachedRollCall({
+          fireEventId: updated.fireEventId,
+          triggeredAt: updated.triggeredAt,
+          entries: updated.entries,
+        });
+        return updated;
       });
     });
 
@@ -102,10 +149,46 @@ export function useEvacuationStream(
     };
   }, [token, enabled]);
 
+  // Drain the outbox when SSE reconnects
+  useEffect(() => {
+    if (!connected || !token) return;
+    void (async () => {
+      const pending = await getOutbox();
+      for (const item of pending) {
+        try {
+          await patchAccountedFor(token, item.personId, item.accountedFor);
+          await removeFromOutbox(item.personId);
+        } catch {
+          // leave in outbox; will retry on next reconnect
+        }
+      }
+    })();
+  }, [connected, token]);
+
+  // Also drain on the browser 'online' event (catches reconnects when SSE was never up)
+  useEffect(() => {
+    if (!token || !enabled) return;
+    const handleOnline = () => {
+      void (async () => {
+        const pending = await getOutbox();
+        for (const item of pending) {
+          try {
+            await patchAccountedFor(token, item.personId, item.accountedFor);
+            await removeFromOutbox(item.personId);
+          } catch {
+            // leave in outbox
+          }
+        }
+      })();
+    };
+    window.addEventListener('online', handleOnline);
+    return () => window.removeEventListener('online', handleOnline);
+  }, [token, enabled]);
+
   const markAccounted = useCallback(
     async (personId: string, accountedFor: boolean) => {
       if (!token) return;
-      // Optimistic update while the PATCH is in flight
+      // Optimistic UI — tile goes green/red immediately
       setRollCall((prev) => {
         if (!prev) return prev;
         return {
@@ -121,11 +204,21 @@ export function useEvacuationStream(
           ),
         };
       });
-      // Server will confirm and broadcast rollcall.updated to all connected marshals
-      await patchAccountedFor(token, personId, accountedFor);
+
+      if (!navigator.onLine) {
+        await addToOutbox(personId, accountedFor);
+        return;
+      }
+
+      try {
+        await patchAccountedFor(token, personId, accountedFor);
+      } catch {
+        // Network failed — queue for replay on reconnect
+        await addToOutbox(personId, accountedFor);
+      }
     },
     [token],
   );
 
-  return { rollCall, lastHeartbeat, connected, markAccounted };
+  return { rollCall, lastSynced, connected, markAccounted };
 }

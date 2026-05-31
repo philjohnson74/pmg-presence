@@ -3,6 +3,7 @@ import { Navigate } from 'react-router-dom';
 import type { OnsiteResponse, PersonType } from '@pmg/contracts';
 import { PersonTypeBadge } from '@pmg/ui';
 import { fetchOnsite } from '../../lib/api.js';
+import { getCachedOnsite, putCachedOnsite } from '../../offline/db.js';
 import { useSession } from '../auth/use-session.js';
 import { useOnsiteStream } from './use-onsite-stream.js';
 
@@ -44,12 +45,20 @@ function OnsiteContent({ token }: Readonly<{ token: string | null }>) {
     try {
       const res = await fetchOnsite(token);
       setData(res);
+      void putCachedOnsite(res);
     } catch {
       setError('Failed to load on-site list');
     } finally {
       setLoading(false);
     }
   }, [token]);
+
+  // Seed from IDB cache so the list renders immediately even before the network responds
+  useEffect(() => {
+    void getCachedOnsite().then((cached) => {
+      if (cached) setData(cached.data);
+    });
+  }, []);
 
   useEffect(() => {
     void load();
