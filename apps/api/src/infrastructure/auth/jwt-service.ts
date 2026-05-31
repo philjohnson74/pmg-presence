@@ -21,4 +21,17 @@ export class JwtService implements JwtServicePort {
     }
     return decoded as unknown as JwtClaims;
   }
+
+  verifyRaw(token: string): Record<string, unknown> {
+    const decoded = jwt.verify(token, this.secret, { algorithms: ['HS256'] });
+    if (typeof decoded === 'string') {
+      throw new Error('Invalid token payload');
+    }
+    return decoded as Record<string, unknown>;
+  }
+
+  signRaw(payload: Record<string, unknown>, expiresAt: Date): string {
+    const exp = Math.floor(expiresAt.getTime() / 1000);
+    return jwt.sign({ ...payload, exp }, this.secret, { algorithm: 'HS256' });
+  }
 }

@@ -82,12 +82,13 @@ export interface ManualInput {
 }
 
 export interface CheckInRequest {
-  method: CheckInMethod;
+  method?: CheckInMethod;
   locationId: string;
   // method-specific payloads (only the relevant one is set)
   qrToken?: string;
   email?: string;
   patientId?: string;
+  personId?: string;   // direct lookup for visitor/patient checkout
   personType?: PersonType;
   visitor?: VisitorInput;
   booking?: BookingInput;

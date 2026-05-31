@@ -48,6 +48,7 @@ export class InMemoryCheckInEventRepository implements CheckInEventRepository {
         if (!event.displayName.toLowerCase().includes(needle)) return false;
       }
       if (filter.personType && event.personType !== filter.personType) return false;
+      if (filter.personId && event.personId !== filter.personId) return false;
       return true;
     });
   }
