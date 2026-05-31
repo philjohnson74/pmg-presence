@@ -31,12 +31,16 @@ export async function apiPost<T>(
   path: string,
   data: unknown,
   token?: string,
-): Promise<{ status: number; body: T }> {
+): Promise<{ status: number; body: T | null }> {
   const res = await request.post(`${API}${path}`, {
     data,
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   });
-  return { status: res.status(), body: await res.json() as T };
+  const contentType = res.headers()['content-type'] ?? '';
+  const body = contentType.includes('application/json')
+    ? await res.json() as T
+    : null;
+  return { status: res.status(), body };
 }
 
 export async function apiPatch<T>(

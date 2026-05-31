@@ -47,15 +47,10 @@ test('Fire alarm trigger — kiosk fires, marshal sees evacuation overlay', asyn
   await expect(kioskPage.getByText(/evacuation in progress/i)).toBeVisible({ timeout: 10_000 });
 
   // ── 3. Marshal app should show the evacuation overlay via SSE ─────────────
-  // Give SSE a moment to deliver the fire.triggered event
-  await marshalPage.waitForSelector('[data-testid="evacuation-overlay"], text=Evacuation', {
+  // The evacuation view renders an <h1>EVACUATION — ROLL CALL</h1>
+  await expect(marshalPage.getByRole('heading', { name: /evacuation/i })).toBeVisible({
     timeout: 12_000,
-  }).catch(() => {
-    // Fallback: check for any text indicating evacuation mode
   });
-  await expect(
-    marshalPage.getByText(/evacuation/i).or(marshalPage.getByText(/roll.?call/i)),
-  ).toBeVisible({ timeout: 12_000 });
 
   // ── 4. Cleanup: resolve the fire event ───────────────────────────────────
   await resolveFireIfActive(request, adminToken);
