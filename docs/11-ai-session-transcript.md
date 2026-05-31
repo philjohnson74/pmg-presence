@@ -218,6 +218,82 @@ Each file had to earn its place:
 
 ---
 
+## Example 4 — Using SonarCloud findings as an objective code-quality gate
+
+> **In one line:** Rather than asking me to "clean up the code", I let SonarCloud scan the Phase 3
+> branch and presented its specific, numbered findings in batches — which kept me accountable to an
+> external standard and let me assess each finding rather than blindly comply.
+
+### 4a — First batch: four findings, one already-fixed
+
+> **PROMPT (verbatim, accompanied by a SonarCloud screenshot showing four findings):**
+>
+> "Can you fix these 4 sonarqube flagged issues please? or let me know why you think they are OK or
+> shouldn't be fixed."
+
+🎯 **CONTEXT SET.** Two things in this prompt shaped the session. First, the source of truth was
+the SonarCloud scan — a concrete, numbered list from an automated third-party tool, not a vague
+"improve quality" request. That precision meant every fix had a traceable justification (file +
+line number + rule). Second, the clause *"or let me know why you think they are OK or shouldn't
+be fixed"* explicitly invited pushback rather than blind compliance — making assessment, not
+execution, the primary job.
+
+> **RESPONSE (condensed).** Assessed all four: three were genuine (redundant `as object` cast in
+> `JwtService.sign`; `new Error` where `new TypeError` was semantically correct for a type-mismatch
+> guard; double-cast `as unknown as JwtClaims` where a direct `as JwtClaims` sufficed; and a
+> `!employee || !employee.active` condition replaceable with `!employee?.active`). Applied all three.
+
+### 4b — Second batch: three findings, one already resolved
+
+> **PROMPT (verbatim, accompanied by a screenshot of the next three findings):**
+>
+> "What about the last 3 in this list?"
+
+> **RESPONSE (condensed).** Assessed all three. The `mock-entra-provider.ts` optional-chain finding
+> (L15) had **already been fixed** in the previous commit — flagged it as "will auto-close on the
+> next scan, no action needed." The remaining two were valid: `return Promise.reject(error)` inside
+> an `async` function should simply `throw` (idiomatic and less confusing); and two separate
+> `import type … from '../../domain/entities.js'` statements in `seed-data.ts` should be one.
+
+🔁 **OUTPUT SELF-CONSTRAINED BY ASSESSMENT.** The already-fixed issue was identified and left alone
+rather than making a redundant second change. This is the diagnostic pattern the "or let me know"
+clause was designed to unlock — agent as assessor, not just executor.
+
+### 4c — Remaining batches: six more findings across three screenshots
+
+> **PROMPTS (verbatim):**
+>
+> "Can you fix these 3?" *(error-handler findings)*
+>
+> "And these 3 please" *(require-role test + badge component)*
+>
+> "and this final one please" *(card.tsx heading accessibility)*
+
+🎯 **CONTEXT SET.** Presenting findings in batches rather than all at once let each group be
+assessed in context. The final finding — *"Headings must have content and the content must be
+accessible by a screen reader"* on `CardTitle` — was the most instructive: the code was technically
+correct at runtime (`children` flows through `{...props}`) but the self-closing `<h3 … />` syntax
+hid it from static analysis and screen reader validators. The fix (destructure `children` explicitly)
+improved both tooling visibility and code readability, not just the SonarCloud score.
+
+> **OUTCOME.** All 14 SonarCloud findings from the Phase 3 scan resolved across four commits, each
+> with a clear rationale in the commit message. Fixes spanned: redundant type casts, wrong Error
+> subclass, async idiom (`throw` vs `return Promise.reject`), duplicate imports, mock setup patterns
+> in tests (`vi.mocked()` over manual casts), negated conditions, redundant `undefined` argument,
+> `Readonly<>` on React props, and an accessibility/static-analysis gap in a heading component.
+
+> **Why this example matters.** The steering pattern differs from Examples 1–3. Those sessions were
+> about design decisions or test quality — areas requiring judgement calls. This one shows a different
+> layer of quality enforcement: using a **third-party automated scanner** (SonarCloud, wired into the
+> GitHub CI pipeline) as the source of truth, so neither I nor the agent decides subjectively what
+> "clean" means. The branch protection + SonarCloud gate means issues compound slowly rather than
+> silently: each PR is scanned, findings are visible and tracked, and the conversation about each one
+> is on record. The "or tell me why it's OK" clause prevented rubber-stamping and produced at least
+> one correct non-fix (the already-resolved L15) — demonstrating that the tool is a trigger for
+> assessment, not an instruction list.
+
+---
+
 ## What these examples demonstrate
 
 | Steering behaviour | Where |
@@ -232,6 +308,9 @@ Each file had to earn its place:
 | Choosing the clean refactor over the quick bolt-on | 2b (🎯) |
 | Using CI as an objective quality gate — threshold not met = branch blocked, no exceptions | 3a (🎯) |
 | Adding "tests that add value" to block coverage padding and force genuine gap analysis | 3a (🎯) |
+| Using a third-party scanner (SonarCloud) as the objective quality standard, not vague "clean up" | 4a (🎯) |
+| Inviting assessment over compliance ("or tell me why it's OK") — produced a correct non-fix | 4b (🔁) |
+| Presenting findings in batches so each can be assessed in context, not rubber-stamped | 4c (🎯) |
 
 The throughline: the agent did the breadth, drafting, and (when probed) the gap-spotting; I owned
 the **judgement** — where the box goes, which abstractions are honest, and when "just do it" should
