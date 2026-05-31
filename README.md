@@ -33,14 +33,17 @@ phone must show who is physically present, even offline, the moment the alarm so
 | Phase | Description | Status |
 |-------|-------------|--------|
 | **Phase 0** | Monorepo skeleton & tooling | ✅ Complete |
-| **Phase 1** | Domain + in-memory repositories + seed | 🔲 Next |
-| **Phase 2** | Auth: mock SSO + JWT + RBAC middleware | 🔲 Pending |
-| **Phase 3** | Check-in/out API + SSE | 🔲 Pending |
-| **Phase 4** | Patient lookup + QR token | 🔲 Pending |
-| **Phase 5** | Fire alarm + roll-call | 🔲 Pending |
-| **Phase 6** | Admin portal | 🔲 Pending |
-| **Phase 7** | Reception kiosk | 🔲 Pending |
-| **Phase 8** | Employee / marshal PWA + offline | 🔲 Pending |
+| **Phase 1** | Domain + in-memory repositories + seed | ✅ Complete |
+| **Phase 2** | Auth: mock SSO + JWT + RBAC middleware | 🔲 Next |
+| **Phase 3** | Check-in/out API + event log + debounce | 🔲 Pending |
+| **Phase 4** | QR issuance + validation | 🔲 Pending |
+| **Phase 5** | Patient lookup | 🔲 Pending |
+| **Phase 6** | Fire trigger + roll-call API + SSE | 🔲 Pending |
+| **Phase 7** | Admin Portal UI | 🔲 Pending |
+| **Phase 8** | Reception Kiosk UI | 🔲 Pending |
+| **Phase 9** | Employee / Marshal PWA UI | 🔲 Pending |
+| **Phase 10** | Offline (Service Worker + IndexedDB) | 🔲 Pending |
+| **Phase 11** | Observability, OpenAPI, E2E, polish | 🔲 Pending |
 
 See [docs/08-implementation-plan.md](docs/08-implementation-plan.md) for full phase detail.
 
