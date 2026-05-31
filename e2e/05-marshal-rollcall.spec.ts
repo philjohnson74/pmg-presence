@@ -89,7 +89,7 @@ test('Marshal roll-call — mark accounted-for → second marshal sees update', 
   // Give SSE a moment to propagate
   await marshal2.waitForTimeout(2_000);
   // Check Marshal 2's evacuation view is still showing (SSE still active)
-  await expect(marshal2.getByText(/evacuation/i)).toBeVisible();
+  await expect(marshal2.getByRole('heading', { name: /evacuation/i })).toBeVisible();
 
   // ── 6. Cleanup ────────────────────────────────────────────────────────────
   await resolveFireIfActive(request, adminToken);
