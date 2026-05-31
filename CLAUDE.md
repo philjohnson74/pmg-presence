@@ -4,11 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Current implementation status
 
-**Phase 5 — Patient lookup is complete on branch `phase/5-patient-lookup`.**
+**Phase 6 — Fire trigger + roll-call API + SSE is complete on branch `phase/6-fire-rollcall-sse`.**
 
-Next: **Phase 6 — Fire trigger + roll-call API + SSE** (see [docs/08-implementation-plan.md](docs/08-implementation-plan.md)).
+Next: **Phase 7 — Admin Portal UI** (see [docs/08-implementation-plan.md](docs/08-implementation-plan.md)).
 
-Create a branch before starting: `git checkout -b phase/6-fire-rollcall-sse`
+Create a branch before starting: `git checkout -b phase/7-admin-portal-ui`
 
 ## Commands
 
@@ -104,6 +104,31 @@ All scripts are orchestrated by **Turborepo** (`turbo.json`); run them from the 
 - **`makePatientsRouter(clinicalSystem)`** wired in `server.ts` alongside the returning-visitor router (both public, rate-limited).
 - **Tests** — 12 new integration tests: match, case-insensitivity, diacritic normalisation, whitespace tolerance, miss (unknown patient), miss (wrong DOB), data-minimisation assertions, 4 validation error cases (missing name, missing dob, invalid format, future date), rate-limit enforcement (429 on request 6).
 - **Total tests** — 172 passing.
+
+## What Phase 6 delivered
+
+- **`SseBroker`** (`infrastructure/sse/sse-broker.ts`) — manages SSE connections; broadcasts events to all connected clients; maintains a ring buffer (100 events) for `Last-Event-ID` replay; sends 15s heartbeats (unref'd so they don't block process exit).
+- **`GET /api/onsite/stream`** — SSE endpoint with `?access_token=` query-param auth (EventSource cannot set headers); validates JWT + role (admin/marshal) on connect; invalid token → 401/403 before any SSE headers are sent.
+- **`TriggerFireEventUseCase`** (`application/use-cases/trigger-fire-event.ts`) — on trigger: snapshots on-site occupants (`unaccounted`) + expected-but-absent people from `ExpectedPresenceService` (`expected-absent`, amber); writes roll-call via `RollCallRepository`; broadcasts `fire.triggered` SSE; calls `PushPort.notifyMarshals`. Rejects with 409 if a fire event is already active.
+- **`LoggingPushService`** (`infrastructure/push/logging-push-service.ts`) — `PushPort` implementation that logs the push intent (real push implementation is a post-MVP concern).
+- **`POST /api/fire/trigger`** — public (kiosk, rate-limited at 5 req/min) **or** admin JWT; resolves `triggeredBy` from the token sub or defaults to `'kiosk'`; non-admin authenticated requests → 403.
+- **`GET /api/fire/events`** — admin/marshal; lists all fire events (ordered by `triggeredAt`). Added `list()` to `FireEventRepository` and `InMemoryFireEventRepository`.
+- **`POST /api/fire/:id/resolve`** — admin only; resolves fire event; broadcasts `fire.resolved` SSE.
+- **`GET /api/onsite/rollcall`** — admin/marshal; returns roll-call entries for the active fire event; 409 if none active.
+- **`PATCH /api/onsite/rollcall/:personId`** — admin/marshal; marks a person accounted-for; broadcasts `rollcall.updated` SSE with `accountedBy` (caller's JWT name).
+- **`GET /api/expected?date=`** (`presentation/routes/expected.ts`) — admin/marshal; defaults to today; uses `ExpectedPresenceService.expectedOn(date)`; returns `{ date, expected: ExpectedPerson[] }`.
+- **`onsite.changed` SSE broadcast** — added to `CheckInEventUseCase` (optional `broker` + `onsiteProjection` in deps); fires after every successful check-in/out with updated counts.
+- **Tests** — 33 new integration tests: fire trigger (public, admin, non-admin 403, double 409), amber set (staff + visitor), roll-call GET/PATCH, resolve, fire events list, expected route (default date, custom date, invalid date, RBAC, checkedInToday), SSE auth (401/403/200+headers), SSE content (fire.triggered and rollcall.updated received via real HTTP server).
+- **Total tests** — 205 passing.
+
+### Known decisions from Phase 6
+
+- **`SseBrokerPort` only exposes `broadcast`** — the `connect()` method (which takes an Express `Response`) is defined as a presentation-layer extension (`SseStreamBroker` interface in `onsite.ts`) to avoid coupling the domain port to Express.
+- **`SseBroker.startHeartbeat()` must be called explicitly** — the production container calls it; test containers do not (prevents timer leakage in tests).
+- **`TriggerFireEventUseCase` uses today's date** (`new Date().toISOString().slice(0, 10)`) for the amber set — test calendar entries are configured with today's date computed the same way for deterministic results.
+- **`onsite.changed` broadcast is fire-and-forget** (`void Promise`) — SSE is best-effort; a failed snapshot doesn't fail the check-in response.
+- **Rate limiter on `/fire/trigger` is per-`makeFireRouter` call** — consistent with the pattern from previous phases; prevents state leaking between test server instances.
+- **`req.params` values require `as string` assertion** — `noUncheckedIndexedAccess: true` in tsconfig makes `ParamsDictionary` index returns `string | undefined`; the route segment guarantees presence at runtime.
 
 ### Known decisions from Phase 5
 

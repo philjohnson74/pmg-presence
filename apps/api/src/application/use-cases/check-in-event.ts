@@ -7,8 +7,9 @@ import type {
   VisitBookingRepository,
   VisitorRepository,
 } from '../../domain/repositories.js';
-import type { ClinicalSystemPort, JwtServicePort } from '../../domain/ports.js';
+import type { ClinicalSystemPort, JwtServicePort, SseBrokerPort } from '../../domain/ports.js';
 import type { JtiStore } from '../../domain/jti-store.js';
+import type { OnsiteProjectionService } from '../services/onsite-projection-service.js';
 import { NotFoundError, ValidationError } from '../errors.js';
 
 export interface CheckInEventDeps {
@@ -20,6 +21,8 @@ export interface CheckInEventDeps {
   auditLog: AuditLogRepository;
   jwtService: JwtServicePort;
   jtiStore?: JtiStore;
+  broker?: SseBrokerPort;
+  onsiteProjection?: OnsiteProjectionService;
 }
 
 const DEBOUNCE_MS = 5_000;
@@ -113,6 +116,26 @@ export class CheckInEventUseCase {
         action: 'manual-checkin',
         changedBy: requestedBy,
         after: { personType, displayName, manual: input.manual },
+      });
+    }
+
+    // Broadcast live update — fire-and-forget, best-effort
+    if (this.deps.broker && this.deps.onsiteProjection) {
+      const broker = this.deps.broker;
+      const { visitCategory } = resolution;
+      void this.deps.onsiteProjection.getSnapshot().then((snapshot) => {
+        broker.broadcast({
+          event: 'onsite.changed',
+          data: {
+            personId,
+            personType,
+            direction,
+            displayName,
+            ...(visitCategory ? { visitCategory } : {}),
+            counts: snapshot.counts,
+            at: event.timestamp,
+          },
+        });
       });
     }
 

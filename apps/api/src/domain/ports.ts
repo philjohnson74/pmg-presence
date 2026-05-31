@@ -1,4 +1,4 @@
-import type { ExpectationSource, PersonType, Role, VisitCategory } from '@pmg/contracts';
+import type { ExpectationSource, PersonType, Role, SseEvent, VisitCategory } from '@pmg/contracts';
 import type { PatientMatch } from './entities.js';
 
 // ─── Calendar port (mock M365 / Microsoft Graph in production) ────────────────
@@ -36,6 +36,12 @@ export interface EmailPort {
     to: string,
     ctx: { displayName: string; timestamp: string },
   ): Promise<void>;
+}
+
+// ─── SSE broker port ──────────────────────────────────────────────────────────
+
+export interface SseBrokerPort {
+  broadcast(event: SseEvent): void;
 }
 
 // ─── JWT service port ─────────────────────────────────────────────────────────

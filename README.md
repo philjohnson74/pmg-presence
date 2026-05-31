@@ -38,8 +38,8 @@ phone must show who is physically present, even offline, the moment the alarm so
 | **Phase 3** | Check-in/out API + event log + debounce | ✅ Complete |
 | **Phase 4** | QR issuance + validation | ✅ Complete |
 | **Phase 5** | Patient lookup | ✅ Complete |
-| **Phase 6** | Fire trigger + roll-call API + SSE | 🔲 Next |
-| **Phase 7** | Admin Portal UI | 🔲 Pending |
+| **Phase 6** | Fire trigger + roll-call API + SSE | ✅ Complete |
+| **Phase 7** | Admin Portal UI | 🔲 Next |
 | **Phase 8** | Reception Kiosk UI | 🔲 Pending |
 | **Phase 9** | Employee / Marshal PWA UI | 🔲 Pending |
 | **Phase 10** | Offline (Service Worker + IndexedDB) | 🔲 Pending |

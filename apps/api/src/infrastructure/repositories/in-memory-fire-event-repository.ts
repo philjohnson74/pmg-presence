@@ -12,6 +12,10 @@ export class InMemoryFireEventRepository implements FireEventRepository {
     return null;
   }
 
+  async list(): Promise<FireEvent[]> {
+    return [...this.store.values()].sort((a, b) => a.triggeredAt.localeCompare(b.triggeredAt));
+  }
+
   async create(triggeredBy: string): Promise<FireEvent> {
     const event: FireEvent = {
       id: randomUUID(),

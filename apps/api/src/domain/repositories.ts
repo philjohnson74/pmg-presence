@@ -52,6 +52,7 @@ export interface CheckInEventRepository {
 
 export interface FireEventRepository {
   active(): Promise<FireEvent | null>;
+  list(): Promise<FireEvent[]>;
   create(triggeredBy: string): Promise<FireEvent>;
   resolve(id: string): Promise<FireEvent>;
 }
