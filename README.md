@@ -36,9 +36,9 @@ phone must show who is physically present, even offline, the moment the alarm so
 | **Phase 1** | Domain + in-memory repositories + seed | ✅ Complete |
 | **Phase 2** | Auth: mock SSO + JWT + RBAC middleware | ✅ Complete |
 | **Phase 3** | Check-in/out API + event log + debounce | ✅ Complete |
-| **Phase 4** | QR issuance + validation | 🔲 Next |
-| **Phase 5** | Patient lookup | 🔲 Pending |
-| **Phase 6** | Fire trigger + roll-call API + SSE | 🔲 Pending |
+| **Phase 4** | QR issuance + validation | ✅ Complete |
+| **Phase 5** | Patient lookup | ✅ Complete |
+| **Phase 6** | Fire trigger + roll-call API + SSE | 🔲 Next |
 | **Phase 7** | Admin Portal UI | 🔲 Pending |
 | **Phase 8** | Reception Kiosk UI | 🔲 Pending |
 | **Phase 9** | Employee / Marshal PWA UI | 🔲 Pending |
