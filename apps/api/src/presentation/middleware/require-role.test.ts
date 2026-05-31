@@ -44,7 +44,7 @@ describe('requireRole middleware', () => {
 
   it('calls next(UnauthorisedError) when req.user is absent', () => {
     const next = vi.fn() as unknown as NextFunction;
-    const req = makeReq(undefined);
+    const req = makeReq();
 
     requireRole('admin')(req, makeRes(), next);
 
