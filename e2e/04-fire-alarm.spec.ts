@@ -32,13 +32,16 @@ test('Fire alarm trigger — kiosk fires, marshal sees evacuation overlay', asyn
   await marshalPage.getByRole('button', { name: /Gary Cooper/i }).click();
   await marshalPage.waitForURL(/\/my-pass/);
 
-  // ── 2. Kiosk: navigate to /fire and confirm the alarm ────────────────────
+  // ── 2. Kiosk: navigate to /fire and confirm the alarm (two-step flow) ────
   const kioskCtx = await browser.newContext();
   const kioskPage = await kioskCtx.newPage();
   await kioskPage.goto(`${KIOSK}/fire`);
 
-  // First button is the warning screen CTA
-  await kioskPage.getByRole('button', { name: /confirm emergency/i }).click();
+  // Step 1 — warning screen: "🚨 Raise Alarm"
+  await kioskPage.getByRole('button', { name: /raise alarm/i }).click();
+
+  // Step 2 — confirm screen: "Yes, trigger alarm 🚨"
+  await kioskPage.getByRole('button', { name: /yes, trigger alarm/i }).click();
 
   // After confirmation the kiosk shows the evacuation lock screen
   await expect(kioskPage.getByText(/evacuation in progress/i)).toBeVisible({ timeout: 10_000 });

@@ -43,8 +43,8 @@ test('Marshal roll-call — mark accounted-for → second marshal sees update', 
   await marshal1.getByRole('button', { name: /Gary Cooper/i }).click();
   await marshal1.waitForURL(/\/my-pass/);
 
-  // Wait for evacuation overlay to appear
-  await expect(marshal1.getByText(/evacuation/i)).toBeVisible({ timeout: 12_000 });
+  // Wait for evacuation overlay to appear (heading is "EVACUATION — ROLL CALL")
+  await expect(marshal1.getByRole('heading', { name: /evacuation/i })).toBeVisible({ timeout: 12_000 });
 
   // ── 3. Marshal 2 (Tom Bryson) — separate context ──────────────────────────
   const marshal2Ctx = await browser.newContext();
@@ -52,7 +52,7 @@ test('Marshal roll-call — mark accounted-for → second marshal sees update', 
   await marshal2.goto(`${EMPLOYEE_APP}/login`);
   await marshal2.getByRole('button', { name: /Tom Bryson/i }).click();
   await marshal2.waitForURL(/\/my-pass/);
-  await expect(marshal2.getByText(/evacuation/i)).toBeVisible({ timeout: 12_000 });
+  await expect(marshal2.getByRole('heading', { name: /evacuation/i })).toBeVisible({ timeout: 12_000 });
 
   // ── 4. Marshal 1 marks Gary Cooper accounted-for ──────────────────────────
   // The roll-call tile for Gary Cooper (emp-004) shows in the evacuation view.

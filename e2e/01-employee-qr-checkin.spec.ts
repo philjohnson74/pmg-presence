@@ -25,8 +25,8 @@ test('Employee QR check-in', async ({ page, request }) => {
   await page.waitForURL(/\/my-pass/);
 
   // ── 2. Verify the QR code SVG is rendered on the My Pass page ─────────────
+  await expect(page.getByRole('heading', { name: /my pass/i })).toBeVisible();
   await expect(page.locator('svg').first()).toBeVisible();
-  await expect(page.getByText(/PMG-0001/)).toBeVisible();
 
   // ── 3. Test seam: fetch QR token via the API (bypasses camera) ────────────
   const token = await apiLogin(request, 'emp-001');

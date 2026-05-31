@@ -18,21 +18,22 @@ test('Visitor sign-in — kiosk form → appears on admin on-site list', async (
   await page.goto(`${KIOSK}/visitor`);
   await expect(page.getByRole('heading', { name: /visitor sign in/i })).toBeVisible();
 
-  // Ensure we're on the "New visitor" tab
-  const newTab = page.getByRole('button', { name: /new visitor/i });
-  if (await newTab.isVisible()) await newTab.click();
+  // Ensure we're on the "New visitor" tab (it's default, but be explicit)
+  await page.getByRole('button', { name: /new visitor/i }).click();
 
   // ── 2. Fill in visitor details ────────────────────────────────────────────
-  await page.getByLabel(/full name/i).fill(VISITOR_NAME);
-  await page.getByLabel(/host/i).fill('Gary Cooper');
-  await page.getByLabel(/reason for visit/i).fill('E2E test visit — system check');
+  // The form uses labels without htmlFor, so use placeholder to locate inputs
+  await page.getByPlaceholder(/dana okoro/i).fill(VISITOR_NAME);
+  await page.getByPlaceholder(/gary cooper/i).fill('Gary Cooper');
+  await page.locator('textarea').fill('E2E test visit — system check');
 
   // Select visit category
-  await page.getByRole('button', { name: /contractor/i }).click();
+  await page.getByRole('button', { name: 'Contractor' }).click();
 
-  // Duration: today only (default)
+  // Duration: today only (default) — no extra interaction needed
+
   // ── 3. Submit the form ───────────────────────────────────────────────────
-  await page.getByRole('button', { name: /sign in/i }).last().click();
+  await page.getByRole('button', { name: /sign in/i }).click();
 
   // ── 4. Success screen ────────────────────────────────────────────────────
   await expect(page.getByText(/signed in/i)).toBeVisible({ timeout: 10_000 });
