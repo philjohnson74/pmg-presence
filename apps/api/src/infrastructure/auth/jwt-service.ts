@@ -25,7 +25,7 @@ export class JwtService implements JwtServicePort {
   verifyRaw(token: string): Record<string, unknown> {
     const decoded = jwt.verify(token, this.secret, { algorithms: ['HS256'] });
     if (typeof decoded === 'string') {
-      throw new Error('Invalid token payload');
+      throw new TypeError('Invalid token payload');
     }
     return decoded as Record<string, unknown>;
   }

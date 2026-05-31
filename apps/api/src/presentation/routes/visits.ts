@@ -2,8 +2,22 @@ import { Router } from 'express';
 import { z } from 'zod';
 import type { RequestHandler } from 'express';
 import type { CheckInEventRepository } from '../../domain/repositories.js';
-import type { VisitHistoryResponse } from '@pmg/contracts';
+import type { CheckInEvent } from '../../domain/entities.js';
+import type { VisitHistoryRecord, VisitHistoryResponse } from '@pmg/contracts';
 import { ValidationError, UnauthorisedError } from '../../application/errors.js';
+
+function toHistoryRecord(e: CheckInEvent): VisitHistoryRecord {
+  return {
+    eventId: e.id,
+    personId: e.personId,
+    personType: e.personType,
+    displayName: e.displayName,
+    direction: e.direction,
+    method: e.method,
+    locationId: e.locationId,
+    timestamp: e.timestamp,
+  };
+}
 
 const historyQuerySchema = z.object({
   from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
@@ -36,16 +50,7 @@ export function makeVisitsRouter(
       })
       .then((events) => {
         const response: VisitHistoryResponse = {
-          records: events.map((e) => ({
-            eventId: e.id,
-            personId: e.personId,
-            personType: e.personType,
-            displayName: e.displayName,
-            direction: e.direction,
-            method: e.method,
-            locationId: e.locationId,
-            timestamp: e.timestamp,
-          })),
+          records: events.map(toHistoryRecord),
           total: events.length,
         };
         res.json(response);
@@ -72,16 +77,7 @@ export function makeVisitsRouter(
       })
       .then((events) => {
         const response: VisitHistoryResponse = {
-          records: events.map((e) => ({
-            eventId: e.id,
-            personId: e.personId,
-            personType: e.personType,
-            displayName: e.displayName,
-            direction: e.direction,
-            method: e.method,
-            locationId: e.locationId,
-            timestamp: e.timestamp,
-          })),
+          records: events.map(toHistoryRecord),
           total: events.length,
         };
         res.json(response);

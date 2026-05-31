@@ -9,6 +9,8 @@ import { makeAuthRouter } from './routes/auth.js';
 import { makeCheckInRouter } from './routes/checkin.js';
 import { makeOnsiteRouter } from './routes/onsite.js';
 import { makeVisitsRouter } from './routes/visits.js';
+import { makeQrRouter } from './routes/qr.js';
+import { makeReturningVisitorRouter } from './routes/returning-visitor.js';
 import { errorHandler } from './middleware/error-handler.js';
 import { healthRouter } from './routes/health.js';
 
@@ -49,7 +51,14 @@ export function createServer(container: Container): Express {
     clinicalSystem: container.clinicalSystem,
     auditLog: container.auditLog,
     jwtService: container.jwtService,
+    jtiStore: container.jtiStore,
   }));
+
+  // QR token issuance (any authed employee)
+  app.use('/api', makeQrRouter(container.employees, container.jwtService, requireAuth));
+
+  // Returning visitor lookup — public, rate-limited
+  app.use('/api', makeReturningVisitorRouter(container.visitBookings, container.visitors));
 
   // Protected onsite + visit history endpoints
   app.use('/api', makeOnsiteRouter(container.onsiteProjection, requireAuth, requireAdminOrMarshal));

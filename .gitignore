@@ -28,6 +28,9 @@ test-results/
 npm-debug.log*
 pnpm-debug.log*
 
+# Claude Code agent memory (local only)
+.claude/
+
 # OS / editor
 .DS_Store
 Thumbs.db

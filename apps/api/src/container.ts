@@ -1,5 +1,6 @@
 import { ExpectedPresenceService } from './application/services/expected-presence-service.js';
 import { OnsiteProjectionService } from './application/services/onsite-projection-service.js';
+import { InMemoryJtiStore } from './infrastructure/jti/in-memory-jti-store.js';
 import { MockM365Calendar } from './infrastructure/adapters/mock-m365-calendar.js';
 import { MockClinicalSystem } from './infrastructure/adapters/mock-clinical-system.js';
 import { JwtService } from './infrastructure/auth/jwt-service.js';
@@ -32,6 +33,7 @@ export interface Container {
   // Auth
   jwtService: JwtService;
   entraProvider: MockEntraProvider;
+  jtiStore: InMemoryJtiStore;
   // Application services
   onsiteProjection: OnsiteProjectionService;
   expectedPresence: ExpectedPresenceService;
@@ -54,6 +56,7 @@ export function createContainer(): Container {
   loadSeed({ employees, visitors, visitBookings, checkInEvents, locations });
 
   const jwtService = new JwtService(config.jwtSecret, config.jwtExpiresInSeconds);
+  const jtiStore = new InMemoryJtiStore();
   const entraProvider = new MockEntraProvider(
     employees,
     jwtService,
@@ -81,6 +84,7 @@ export function createContainer(): Container {
     clinicalSystem,
     calendar,
     jwtService,
+    jtiStore,
     entraProvider,
     onsiteProjection,
     expectedPresence,
@@ -112,6 +116,7 @@ export function buildTestContainer(
   const calendar = new MockM365Calendar(opts.calendarEntries ?? []);
 
   const jwtService = new JwtService(secret, 8 * 60 * 60);
+  const jtiStore = new InMemoryJtiStore();
   const entraProvider = new MockEntraProvider(
     employees,
     jwtService,
@@ -139,6 +144,7 @@ export function buildTestContainer(
     clinicalSystem,
     calendar,
     jwtService,
+    jtiStore,
     entraProvider,
     onsiteProjection,
     expectedPresence,

@@ -27,14 +27,11 @@ export class InMemoryVisitBookingRepository implements VisitBookingRepository {
     return null;
   }
 
-  async findActiveByCode(surname: string, code: string): Promise<VisitBooking | null> {
-    const normalised = surname.trim().toLowerCase();
+  async findActiveByCode(_surname: string, code: string): Promise<VisitBooking | null> {
+    // Finds by passCode only — surname validation happens at the application layer
+    // where the resolved Visitor name is available for comparison.
     for (const booking of this.store.values()) {
-      if (booking.status !== 'active' || booking.passCode !== code) continue;
-      // Validate against the visitor's surname — caller must supply the visitorId-resolved name.
-      // We store the code directly; surname matching happens in the use case.
-      // This repo only enforces code uniqueness; surname check is at the application layer.
-      if (normalised && booking.passCode === code) return booking;
+      if (booking.status === 'active' && booking.passCode === code) return booking;
     }
     return null;
   }

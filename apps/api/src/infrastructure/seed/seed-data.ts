@@ -1,3 +1,4 @@
+import type { Role } from '@pmg/contracts';
 import type { CheckInEvent, Employee, Location, Patient, VisitBooking, Visitor } from '../../domain/entities.js';
 
 // ─── Canonical demo date ───────────────────────────────────────────────────────
@@ -15,128 +16,27 @@ export const LOCATIONS: Location[] = [
 // ─── Employees (11) ───────────────────────────────────────────────────────────
 // 2 admins, 3 marshals, 6 employees; 2 with no email (rows 6 & 8 in doc 10)
 
+const EMP_CREATED_AT = '2026-01-01T00:00:00.000Z';
+
+function makeEmployee(
+  id: string, name: string, email: string | null,
+  role: Role, employeeNumber: string, qrCodeToken: string,
+): Employee {
+  return { id, name, email, role, employeeNumber, qrCodeToken, active: true, createdAt: EMP_CREATED_AT, updatedAt: EMP_CREATED_AT };
+}
+
 export const EMPLOYEES: Employee[] = [
-  {
-    id: 'emp-001',
-    name: 'David Stevens',
-    email: 'david@peacocksgroup.com',
-    role: 'admin',
-    employeeNumber: 'PMG-0001',
-    qrCodeToken: 'qr-seed-emp-001',
-    active: true,
-    createdAt: '2026-01-01T00:00:00.000Z',
-    updatedAt: '2026-01-01T00:00:00.000Z',
-  },
-  {
-    id: 'emp-002',
-    name: 'Chris Peacock',
-    email: 'chris@peacocksgroup.com',
-    role: 'admin',
-    employeeNumber: 'PMG-0002',
-    qrCodeToken: 'qr-seed-emp-002',
-    active: true,
-    createdAt: '2026-01-01T00:00:00.000Z',
-    updatedAt: '2026-01-01T00:00:00.000Z',
-  },
-  {
-    id: 'emp-003',
-    name: 'Priya Shah',
-    email: 'priya@peacocksgroup.com',
-    role: 'marshal',
-    employeeNumber: 'PMG-0014',
-    qrCodeToken: 'qr-seed-emp-003',
-    active: true,
-    createdAt: '2026-01-01T00:00:00.000Z',
-    updatedAt: '2026-01-01T00:00:00.000Z',
-  },
-  {
-    id: 'emp-004',
-    name: 'Gary Cooper',
-    email: 'gary@peacocksgroup.com',
-    role: 'marshal',
-    employeeNumber: 'PMG-0003',
-    qrCodeToken: 'qr-seed-emp-004',
-    active: true,
-    createdAt: '2026-01-01T00:00:00.000Z',
-    updatedAt: '2026-01-01T00:00:00.000Z',
-  },
-  {
-    id: 'emp-005',
-    name: 'Tom Bryson',
-    email: 'tom.bryson@peacocksgroup.com',
-    role: 'marshal',
-    employeeNumber: 'PMG-0021',
-    qrCodeToken: 'qr-seed-emp-005',
-    active: true,
-    createdAt: '2026-01-01T00:00:00.000Z',
-    updatedAt: '2026-01-01T00:00:00.000Z',
-  },
-  {
-    id: 'emp-006',
-    name: 'Sam Doyle',
-    email: null, // no email — workshop tech (email-optional demo)
-    role: 'employee',
-    employeeNumber: 'PMG-1187',
-    qrCodeToken: 'qr-seed-emp-006',
-    active: true,
-    createdAt: '2026-01-01T00:00:00.000Z',
-    updatedAt: '2026-01-01T00:00:00.000Z',
-  },
-  {
-    id: 'emp-007',
-    name: 'Aisha Khan',
-    email: 'aisha@peacocksgroup.com',
-    role: 'employee',
-    employeeNumber: 'PMG-1044',
-    qrCodeToken: 'qr-seed-emp-007',
-    active: true,
-    createdAt: '2026-01-01T00:00:00.000Z',
-    updatedAt: '2026-01-01T00:00:00.000Z',
-  },
-  {
-    id: 'emp-008',
-    name: 'Mark Reilly',
-    email: null, // no email — manufacturing (email-optional demo)
-    role: 'employee',
-    employeeNumber: 'PMG-1190',
-    qrCodeToken: 'qr-seed-emp-008',
-    active: true,
-    createdAt: '2026-01-01T00:00:00.000Z',
-    updatedAt: '2026-01-01T00:00:00.000Z',
-  },
-  {
-    id: 'emp-009',
-    name: 'Joanne Petrie',
-    email: 'joanne@peacocksgroup.com',
-    role: 'employee',
-    employeeNumber: 'PMG-1071',
-    qrCodeToken: 'qr-seed-emp-009',
-    active: true,
-    createdAt: '2026-01-01T00:00:00.000Z',
-    updatedAt: '2026-01-01T00:00:00.000Z',
-  },
-  {
-    id: 'emp-010',
-    name: 'Dev Anand',
-    email: 'dev@peacocksgroup.com',
-    role: 'employee',
-    employeeNumber: 'PMG-1099',
-    qrCodeToken: 'qr-seed-emp-010',
-    active: true,
-    createdAt: '2026-01-01T00:00:00.000Z',
-    updatedAt: '2026-01-01T00:00:00.000Z',
-  },
-  {
-    id: 'emp-011',
-    name: 'Carla Jones',
-    email: 'carla@peacocksgroup.com',
-    role: 'employee',
-    employeeNumber: 'PMG-1058',
-    qrCodeToken: 'qr-seed-emp-011',
-    active: true,
-    createdAt: '2026-01-01T00:00:00.000Z',
-    updatedAt: '2026-01-01T00:00:00.000Z',
-  },
+  makeEmployee('emp-001', 'David Stevens',         'david@peacocksgroup.com',       'admin',    'PMG-0001', 'qr-seed-emp-001'),
+  makeEmployee('emp-002', 'Chris Peacock',          'chris@peacocksgroup.com',       'admin',    'PMG-0002', 'qr-seed-emp-002'),
+  makeEmployee('emp-003', 'Priya Shah',             'priya@peacocksgroup.com',       'marshal',  'PMG-0014', 'qr-seed-emp-003'),
+  makeEmployee('emp-004', 'Gary Cooper',            'gary@peacocksgroup.com',        'marshal',  'PMG-0003', 'qr-seed-emp-004'),
+  makeEmployee('emp-005', 'Tom Bryson',             'tom.bryson@peacocksgroup.com',  'marshal',  'PMG-0021', 'qr-seed-emp-005'),
+  makeEmployee('emp-006', 'Sam Doyle',              null, /* no email — workshop tech */  'employee', 'PMG-1187', 'qr-seed-emp-006'),
+  makeEmployee('emp-007', 'Aisha Khan',             'aisha@peacocksgroup.com',       'employee', 'PMG-1044', 'qr-seed-emp-007'),
+  makeEmployee('emp-008', 'Mark Reilly',            null, /* no email — manufacturing */ 'employee', 'PMG-1190', 'qr-seed-emp-008'),
+  makeEmployee('emp-009', 'Joanne Petrie',          'joanne@peacocksgroup.com',      'employee', 'PMG-1071', 'qr-seed-emp-009'),
+  makeEmployee('emp-010', 'Dev Anand',              'dev@peacocksgroup.com',         'employee', 'PMG-1099', 'qr-seed-emp-010'),
+  makeEmployee('emp-011', 'Carla Jones',            'carla@peacocksgroup.com',       'employee', 'PMG-1058', 'qr-seed-emp-011'),
 ];
 
 // ─── Patients (9) — mock clinical system records ──────────────────────────────
