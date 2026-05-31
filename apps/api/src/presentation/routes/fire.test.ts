@@ -58,6 +58,15 @@ const AMBER_BOOKING: VisitBooking = {
   createdAt: '2026-01-01T00:00:00.000Z',
 };
 
+const ONSITE_WORKER_EVENT = {
+  personId: 'emp-onsite',
+  personType: 'employee' as const,
+  direction: 'in' as const,
+  method: 'email' as const,
+  locationId: 'loc-reception',
+  displayName: 'Onsite Worker',
+};
+
 function buildFireContainer() {
   const container = buildTestContainer({
     calendarEntries: [
@@ -85,6 +94,53 @@ function buildFireContainer() {
   return container;
 }
 
+function waitForSseEvent(
+  app: http.RequestListener,
+  token: string,
+  eventName: string,
+  trigger: () => void,
+): Promise<void> {
+  return new Promise<void>((resolve, reject) => {
+    const httpServer = http.createServer(app);
+    httpServer.listen(0, () => {
+      const { port } = httpServer.address() as AddressInfo;
+      const chunks: string[] = [];
+      let done = false;
+
+      const req = http.get(
+        `http://localhost:${port}/api/onsite/stream?access_token=${token}`,
+        (res) => {
+          res.setEncoding('utf8');
+          res.on('data', (chunk: string) => {
+            chunks.push(chunk);
+            if (!done && chunks.join('').includes(eventName)) {
+              done = true;
+              req.destroy();
+              httpServer.close();
+              resolve();
+            }
+          });
+        },
+      );
+
+      req.on('error', (err) => {
+        const code = (err as NodeJS.ErrnoException).code;
+        if (code === 'ECONNRESET' && done) return;
+        httpServer.close(() => reject(err));
+      });
+
+      trigger();
+
+      setTimeout(() => {
+        if (!done) {
+          httpServer.close();
+          reject(new Error(`Timed out waiting for ${eventName} SSE event`));
+        }
+      }, 4000);
+    });
+  });
+}
+
 // ─── POST /api/fire/trigger ────────────────────────────────────────────────────
 
 describe('POST /api/fire/trigger', () => {
@@ -92,14 +148,7 @@ describe('POST /api/fire/trigger', () => {
     const container = buildFireContainer();
     const app = createServer(container);
 
-    await container.checkInEvents.append({
-      personId: 'emp-onsite',
-      personType: 'employee',
-      direction: 'in',
-      method: 'email',
-      locationId: 'loc-reception',
-      displayName: 'Onsite Worker',
-    });
+    await container.checkInEvents.append(ONSITE_WORKER_EVENT);
 
     const res = await request(app).post('/api/fire/trigger').send();
 
@@ -141,14 +190,7 @@ describe('POST /api/fire/trigger', () => {
     const container = buildFireContainer();
     const app = createServer(container);
 
-    await container.checkInEvents.append({
-      personId: 'emp-onsite',
-      personType: 'employee',
-      direction: 'in',
-      method: 'email',
-      locationId: 'loc-reception',
-      displayName: 'Onsite Worker',
-    });
+    await container.checkInEvents.append(ONSITE_WORKER_EVENT);
 
     const res = await request(app).post('/api/fire/trigger').send();
     expect(res.status).toBe(201);
@@ -215,14 +257,7 @@ describe('GET /api/onsite/rollcall', () => {
     const app = createServer(container);
     const token = await getToken(app, ADMIN.id);
 
-    await container.checkInEvents.append({
-      personId: 'emp-onsite',
-      personType: 'employee',
-      direction: 'in',
-      method: 'email',
-      locationId: 'loc-reception',
-      displayName: 'Onsite Worker',
-    });
+    await container.checkInEvents.append(ONSITE_WORKER_EVENT);
 
     const trigger = await request(app).post('/api/fire/trigger').send();
 
@@ -265,14 +300,7 @@ describe('PATCH /api/onsite/rollcall/:personId', () => {
     const app = createServer(container);
     const token = await getToken(app, MARSHAL.id);
 
-    await container.checkInEvents.append({
-      personId: 'emp-onsite',
-      personType: 'employee',
-      direction: 'in',
-      method: 'email',
-      locationId: 'loc-reception',
-      displayName: 'Onsite Worker',
-    });
+    await container.checkInEvents.append(ONSITE_WORKER_EVENT);
 
     await request(app).post('/api/fire/trigger').send();
 
@@ -579,47 +607,10 @@ describe('GET /api/onsite/stream', () => {
     const app = createServer(container);
     const token = await getToken(app, ADMIN.id);
 
-    await new Promise<void>((resolve, reject) => {
-      const httpServer = http.createServer(app);
-      httpServer.listen(0, () => {
-        const { port } = httpServer.address() as AddressInfo;
-
-        const chunks: string[] = [];
-        let done = false;
-
-        const req = http.get(
-          `http://localhost:${port}/api/onsite/stream?access_token=${token}`,
-          (res) => {
-            res.setEncoding('utf8');
-            res.on('data', (chunk: string) => {
-              chunks.push(chunk);
-              if (!done && chunks.join('').includes('fire.triggered')) {
-                done = true;
-                req.destroy();
-                httpServer.close(() => resolve());
-              }
-            });
-          },
-        );
-
-        req.on('error', (err) => {
-          const code = (err as NodeJS.ErrnoException).code;
-          if (code === 'ECONNRESET' && done) return;
-          httpServer.close(() => reject(err));
-        });
-
-        // Fire the alarm shortly after the SSE connection is established
-        setTimeout(() => {
-          void container.triggerFireEvent.execute('test-trigger').catch(() => {/* already active */});
-        }, 60);
-
-        setTimeout(() => {
-          if (!done) {
-            httpServer.close();
-            reject(new Error('Timed out waiting for fire.triggered SSE event'));
-          }
-        }, 4000);
-      });
+    await waitForSseEvent(app, token, 'fire.triggered', () => {
+      setTimeout(() => {
+        void container.triggerFireEvent.execute('test-trigger').catch(() => {/* already active */});
+      }, 60);
     });
   });
 
@@ -629,63 +620,20 @@ describe('GET /api/onsite/stream', () => {
     const marshalToken = await getToken(app, MARSHAL.id);
     const adminToken = await getToken(app, ADMIN.id);
 
-    await container.checkInEvents.append({
-      personId: 'emp-onsite',
-      personType: 'employee',
-      direction: 'in',
-      method: 'email',
-      locationId: 'loc-reception',
-      displayName: 'Onsite Worker',
-    });
+    await container.checkInEvents.append(ONSITE_WORKER_EVENT);
 
-    await new Promise<void>((resolve, reject) => {
-      const httpServer = http.createServer(app);
-      httpServer.listen(0, () => {
-        const { port } = httpServer.address() as AddressInfo;
-
-        const chunks: string[] = [];
-        let done = false;
-
-        const req = http.get(
-          `http://localhost:${port}/api/onsite/stream?access_token=${marshalToken}`,
-          (res) => {
-            res.setEncoding('utf8');
-            res.on('data', (chunk: string) => {
-              chunks.push(chunk);
-              if (!done && chunks.join('').includes('rollcall.updated')) {
-                done = true;
-                req.destroy();
-                httpServer.close(() => resolve());
-              }
-            });
-          },
-        );
-
-        req.on('error', (err) => {
-          const code = (err as NodeJS.ErrnoException).code;
-          if (code === 'ECONNRESET' && done) return;
-          httpServer.close(() => reject(err));
-        });
-
-        setTimeout(async () => {
-          try {
-            await request(app).post('/api/fire/trigger').send();
-            await request(app)
-              .patch('/api/onsite/rollcall/emp-onsite')
-              .set('Authorization', `Bearer ${adminToken}`)
-              .send({ accountedFor: true });
-          } catch {
-            // ignore
-          }
-        }, 60);
-
-        setTimeout(() => {
-          if (!done) {
-            httpServer.close();
-            reject(new Error('Timed out waiting for rollcall.updated SSE event'));
-          }
-        }, 4000);
-      });
+    await waitForSseEvent(app, marshalToken, 'rollcall.updated', () => {
+      setTimeout(async () => {
+        try {
+          await request(app).post('/api/fire/trigger').send();
+          await request(app)
+            .patch('/api/onsite/rollcall/emp-onsite')
+            .set('Authorization', `Bearer ${adminToken}`)
+            .send({ accountedFor: true });
+        } catch {
+          // ignore
+        }
+      }, 60);
     });
   });
 });

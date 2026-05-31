@@ -14,7 +14,7 @@ export function VisitorCheckoutPicker({ onSuccess }: Props) {
 
   useEffect(() => {
     fetchCheckedInVisitors()
-      .then(setVisitors)
+      .then((vs) => setVisitors(vs.slice().sort((a, b) => a.displayName.localeCompare(b.displayName))))
       .catch(() => setError('Could not load visitor list.'))
       .finally(() => setLoading(false));
   }, []);
@@ -25,7 +25,7 @@ export function VisitorCheckoutPicker({ onSuccess }: Props) {
     try {
       const result = await checkOut({
         personId: visitor.personId,
-        personType: 'visitor',
+        personType: visitor.personType,
         locationId: 'loc-reception',
       });
       onSuccess(result);
@@ -55,7 +55,7 @@ export function VisitorCheckoutPicker({ onSuccess }: Props) {
     return (
       <div className="text-center py-12">
         <p className="text-4xl mb-3">🏠</p>
-        <p className="text-gray-500 font-medium">No visitors currently signed in.</p>
+        <p className="text-gray-500 font-medium">No one currently signed in.</p>
       </div>
     );
   }
@@ -66,11 +66,10 @@ export function VisitorCheckoutPicker({ onSuccess }: Props) {
       {visitors.map((v) => (
         <button
           key={v.personId}
-          onClick={() => handleCheckout(v)}
+          onClick={() => void handleCheckout(v)}
           disabled={checkingOut !== null}
           className="w-full flex items-center gap-4 rounded-xl border-2 border-gray-200 px-5 py-4 text-left hover:border-pmg-navy hover:bg-pmg-navy/5 transition-colors disabled:opacity-50 active:scale-[0.99]"
         >
-          <span className="text-2xl">🧑‍🤝‍🧑</span>
           <span className="text-pmg-navy font-semibold text-lg flex-1">{v.displayName}</span>
           {checkingOut === v.personId ? (
             <span className="text-gray-400 text-sm">Signing out…</span>

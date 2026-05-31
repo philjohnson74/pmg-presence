@@ -15,3 +15,4 @@ export {
   CardFooter,
 } from './components/card.js';
 export { cn } from './lib/utils.js';
+export { PeacocksLogo } from './components/peacocks-logo.js';

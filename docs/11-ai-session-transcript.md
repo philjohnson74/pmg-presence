@@ -363,6 +363,150 @@ asked to adjudicate individual cases.
 
 ---
 
+## Example 6 — Bug discovery through scenario testing: kiosk fire alarm stuck in a loop
+
+> **In one line:** I tested the fire alarm flow on the kiosk and found the page was permanently
+> stuck — which turned out to be a state initialisation bug where the component always reset to
+> the warning step, causing an infinite redirect loop.
+
+> **PROMPT (verbatim):**
+>
+> "Why is the kiosk app stuck in the raise fire alarm screen? It won't go back"
+
+🎯 **CONTEXT SET.** The question was diagnostic, not prescriptive — "why" rather than "fix it."
+That framing forced the agent to trace the actual control flow (`KioskProvider`, `FireLockRedirect`,
+`FirePage`) rather than reaching for an obvious quick fix.
+
+> **RESPONSE (condensed).** Traced the loop: `FirePage` initialised `step` as `'warning'`
+> unconditionally. When fire was active, `FireLockRedirect` redirected every `/` navigation back
+> to `/fire-lock`, which remounted `FirePage` — which reset to `'warning'` again. Identified the
+> fix: initialise `step` from `isFireActive` so a remount on an already-active alarm goes straight
+> to the `'done'` state, breaking the loop.
+
+> **OUTCOME.** One-line fix in `fire-page.tsx`:
+> `useState<Step>(isFireActive ? 'done' : 'warning')`.
+> The symptom ("won't go back") was actually an infinite loop in the component lifecycle, not a
+> navigation bug. Testing the scenario end-to-end was what surfaced it — static review of the
+> component in isolation would not have.
+
+---
+
+## Example 7 — Gap finding through cross-view observation: patients missing from kiosk sign-out
+
+> **In one line:** I noticed patients appeared correctly on the admin portal's on-site list but
+> were absent from the kiosk sign-out picker, identified the gap precisely, then redirected a
+> follow-up that over-disclosed patient type to protect privacy.
+
+### 7a — Identifying the functional gap
+
+> **PROMPT (verbatim):**
+>
+> "Patients aren't showing on the checkout screen from the kiosk, so they don't have any way to
+> checkout currently. Can you make sure they show on the checkout kiosk screen so they can checkout
+> when leaving the building. They do show as onsite on the admin portal which is correct."
+
+🎯 **CONTEXT SET.** Two pieces of information in a single sentence did the steering: the *observed
+gap* ("patients aren't showing") and the *expected cross-view consistency* ("they do show as onsite
+on the admin portal"). That immediately framed the bug as a data-source mismatch rather than a
+display problem — the admin view uses `GET /api/onsite` (returns all types) while the kiosk picker
+calls `GET /api/onsite/visitors` (filtered to `personType === 'visitor'` only).
+
+> **RESPONSE (condensed).** Extended `/api/onsite/visitors` to filter for `visitor || patient`,
+> added `personType` to each response entry so the checkout call could send the correct value, and
+> updated the kiosk picker and API client accordingly. Also updated the empty-state copy from
+> "No visitors currently signed in" to "No one currently signed in."
+
+### 7b — Redirecting an over-disclosure
+
+> **PROMPT (verbatim):**
+>
+> "In the list on Checkout, I don't want it to say whether somebody is a visitor or patient, just
+> have their name so it doesn't reveal more information than needed to people looking at the list.
+> For somebody checking out they just need to find their name in it and checkout."
+
+🔁 **OUTPUT OVERRIDDEN.** The initial fix had added a small type label ("visitor" / "patient")
+under each name. I caught this as unnecessary disclosure — someone standing at a kiosk reading the
+list should not be able to infer another person's patient status. I redirected to name-only.
+
+> **OUTCOME.** The checkout picker shows only `displayName` — no type label, no icon differentiating
+> patients from visitors. `personType` is still sent on the checkout API call (so the server records
+> it correctly) but is never rendered. The data-minimisation principle from the patient-lookup
+> design (`GET /api/patients/lookup` never exposes DOB or clinical IDs) was consistently applied
+> to the UI layer.
+
+---
+
+## Example 8 — Two symptoms, one root cause: employee self check-in always "already checked in"
+
+> **In one line:** I described two distinct UX problems together — the button always said "already
+> checked in" and history always showed "QR Scan" — which framed them as a single root cause
+> rather than two separate bugs, leading to a cleaner fix.
+
+> **PROMPT (verbatim):**
+>
+> "Employee app - My Pass screen always says already checked in when clicking Check Me In button.
+> Also method is QR Scan in history when user clicks check me in or check me out button."
+
+🎯 **CONTEXT SET.** Reporting both symptoms in the same message connected them. The QR scan method
+label in history was the diagnostic clue: the button was calling `method: 'qr'` (intended for
+the physical kiosk scanner), which burned the JWT's `jti` on first use. Every subsequent click
+hit the JTI replay guard, which returned `alreadyOnsite: true` with `debounced: true` — hence
+"already checked in" every time. Treating these as two separate issues would have missed the
+shared cause entirely.
+
+> **RESPONSE (condensed).** Identified the root: `selfCheckIn` / `selfCheckOut` in the employee
+> API client were posting `method: 'qr'` with the current QR token. The self-service button is
+> not a QR scan — the authenticated user is clicking on their own device, so `method: 'email'`
+> (using the session email) is both technically correct and semantically honest. Changed both API
+> client functions to `method: 'email'`; updated `SelfCheckInButtons` to accept `email` instead
+> of `qrToken`; passed `user.email` from the session in `MyPassPage`. Also guarded the buttons
+> so they are hidden for employees with no email (who should use the kiosk "Find Me" tab).
+
+> **OUTCOME.** The check-in button works on every click; history records "Email" as the method.
+> The QR code on the page is unchanged and still works for physical kiosk scanning — the fix
+> only changed how the *software button* identifies the user. Separating the two identity paths
+> (QR scan for kiosks, email for in-app) also correctly reflects how each one establishes identity.
+
+---
+
+## Example 9 — Proactive UX standard enforcement: adding consistent ordering across all lists
+
+> **In one line:** I identified that no lists in the system had any ordering, specified exactly
+> which views were affected and the relevant grouping constraint (roll call per traffic light),
+> and drove a systematic fix across all three apps in a single pass.
+
+> **PROMPT (verbatim):**
+>
+> "There isn't any ordering on lists currently, can you add some ordering on the following please…
+> Admin (onsite, expected, employees) - Kiosk (Signout) - Marshal (OnSite Now, roll call (per
+> traffic light))"
+
+🎯 **CONTEXT SET.** Two things in this prompt did the work. First, the explicit enumeration of
+affected views meant the fix was systematic — no single view was treated in isolation, and none
+was missed. Second, the parenthetical "(per traffic light)" on roll call carried a precise
+constraint: sort *within* each status section (red / amber / green), not across them. Sorting
+across sections would destroy the visual grouping that makes roll call usable under pressure.
+
+> **RESPONSE (condensed).** Applied alphabetical A-Z sort by display name / name at the point
+> of render in six locations: admin on-site table, admin expected-persons list (both Today and
+> Tomorrow cards), admin employees table (active and inactive independently), kiosk sign-out
+> picker, marshal on-site table, and all three roll-call sections. All sorts are client-side
+> using `localeCompare` (handles accented names correctly — relevant for the seeded data).
+> No API changes needed.
+
+> **OUTCOME.** All six views sort consistently. The roll-call sections remain in traffic-light
+> order (unaccounted → amber → accounted); names within each section are alphabetical. The
+> `localeCompare` choice handles the diacritic-containing names in the seed data correctly
+> (e.g. "Bram de Vries", "Renée Lambert") without requiring any special-case logic.
+
+> **Why this example matters.** None of the individual lists was obviously broken — they rendered
+> correctly, just in insertion order. The UX gap was only visible by stepping back and looking
+> across the system. Specifying the views explicitly (rather than "sort all lists") and adding
+> the roll-call constraint ("per traffic light") shows the difference between vague quality
+> direction and precise, testable requirements.
+
+---
+
 ## What these examples demonstrate
 
 | Steering behaviour | Where |
@@ -382,6 +526,13 @@ asked to adjudicate individual cases.
 | Presenting findings in batches so each can be assessed in context, not rubber-stamped | 4c (🎯) |
 | Cancelling mid-start to fix a naming error before it was written into source files | 5a (🔁) |
 | Naming the app after its *audience*, not a privileged subset — with explicit reasoning | 5b (🎯) |
+| Asking "why" rather than "fix it" — forcing root-cause tracing over symptom patching | 6 (🎯) |
+| Bug discovery through end-to-end scenario testing, not static code review | 6 |
+| Cross-view observation ("correct in admin, missing in kiosk") pinpointing a data-source mismatch | 7a (🎯) |
+| Redirecting an over-disclosure to enforce data minimisation at the UI layer | 7b (🔁) |
+| Reporting two symptoms together to frame a single root cause, not two separate bugs | 8 (🎯) |
+| Explicit view enumeration + grouping constraint ("per traffic light") making ordering requirements precise and testable | 9 (🎯) |
+| Stepping back across the whole system to spot a UX standard gap invisible at the individual-view level | 9 |
 
 The throughline: the agent did the breadth, drafting, and (when probed) the gap-spotting; I owned
 the **judgement** — where the box goes, which abstractions are honest, and when "just do it" should

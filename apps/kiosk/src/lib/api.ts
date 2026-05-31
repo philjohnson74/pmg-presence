@@ -60,6 +60,7 @@ export function returningVisitorLookup(
 export interface CheckedInVisitor {
   personId: string;
   displayName: string;
+  personType: 'visitor' | 'patient';
 }
 
 export async function fetchCheckedInVisitors(): Promise<CheckedInVisitor[]> {

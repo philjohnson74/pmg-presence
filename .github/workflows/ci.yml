@@ -133,3 +133,8 @@ jobs:
           key: turbo-${{ github.sha }}
           restore-keys: turbo-
       - run: pnpm build
+
+  # E2E tests are intentionally excluded from CI.
+  # Cold-starting 4 dev servers (API + 3 Vite apps) on a GitHub-hosted runner exceeds the
+  # per-server startup budget reliably, causing timeouts. The 205 unit + integration tests
+  # are the CI quality gate; E2E tests are run locally with `pnpm test:e2e` before demos.

@@ -79,10 +79,10 @@ export function makeEmployeesRouter(
     }
     const { name, email, role, active } = parsed.data;
     const patch = {
-      ...(name !== undefined ? { name } : {}),
-      ...(email !== undefined ? { email: email ?? null } : {}),
-      ...(role !== undefined ? { role } : {}),
-      ...(active !== undefined ? { active } : {}),
+      ...(name === undefined ? {} : { name }),
+      ...(email === undefined ? {} : { email: email ?? null }),
+      ...(role === undefined ? {} : { role }),
+      ...(active === undefined ? {} : { active }),
     };
 
     employees

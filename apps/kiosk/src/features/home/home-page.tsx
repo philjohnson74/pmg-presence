@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { PeacocksLogo } from '@pmg/ui';
 import { useKiosk } from '../../context/kiosk-context.js';
 
 interface TileProps {
@@ -37,16 +38,8 @@ export function HomePage() {
   return (
     <div className="flex flex-col min-h-screen bg-pmg-navy">
       {/* Header */}
-      <header className="flex items-center gap-4 px-8 py-6">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-pmg-orange rounded-full flex items-center justify-center text-white text-xl font-bold">
-            ♥
-          </div>
-          <div>
-            <p className="text-white font-semibold text-lg leading-none">Peacocks Medical Group</p>
-            <p className="text-white/50 text-sm">Reception</p>
-          </div>
-        </div>
+      <header className="flex items-center px-8 py-6">
+        <PeacocksLogo className="h-10 w-auto" />
       </header>
 
       {/* Welcome */}

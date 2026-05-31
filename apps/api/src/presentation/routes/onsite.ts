@@ -33,14 +33,14 @@ export interface OnsiteRouterDeps {
 export function makeOnsiteRouter(deps: OnsiteRouterDeps): Router {
   const router = Router();
 
-  // Public — kiosk visitor checkout picker (data-minimised: id + name only)
+  // Public — kiosk sign-out picker (visitors + patients; data-minimised: id, name, personType only)
   router.get('/onsite/visitors', (_req, res, next) => {
     deps.onsiteProjection
       .getSnapshot()
       .then((snapshot) => {
         const visitors = snapshot.occupants
-          .filter((o) => o.personType === 'visitor')
-          .map((o) => ({ personId: o.personId, displayName: o.displayName }));
+          .filter((o) => o.personType === 'visitor' || o.personType === 'patient')
+          .map((o) => ({ personId: o.personId, displayName: o.displayName, personType: o.personType }));
         return res.json({ visitors });
       })
       .catch((err: unknown) => next(err));
@@ -91,7 +91,7 @@ export function makeOnsiteRouter(deps: OnsiteRouterDeps): Router {
 
     const rawLastEventId = req.headers['last-event-id'];
     const lastEventIdStr = Array.isArray(rawLastEventId) ? rawLastEventId[0] : rawLastEventId;
-    const lastEventId = lastEventIdStr ? parseInt(lastEventIdStr, 10) : undefined;
+    const lastEventId = lastEventIdStr ? Number.parseInt(lastEventIdStr, 10) : undefined;
 
     deps.broker.connect(res, claims.sub, lastEventId);
   });

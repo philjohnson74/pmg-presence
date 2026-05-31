@@ -7,8 +7,8 @@ type Step = 'warning' | 'confirm' | 'done';
 
 export function FirePage() {
   const navigate = useNavigate();
-  const { activateFireLock } = useKiosk();
-  const [step, setStep] = useState<Step>('warning');
+  const { activateFireLock, isFireActive } = useKiosk();
+  const [step, setStep] = useState<Step>(isFireActive ? 'done' : 'warning');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

@@ -53,23 +53,23 @@ export function fetchQrToken(token: string): Promise<QrTokenResponse> {
 
 export function selfCheckIn(
   token: string,
-  qrToken: string,
+  email: string,
   locationId: string,
 ): Promise<CheckInResponse> {
   return req<CheckInResponse>('/checkin', token, {
     method: 'POST',
-    body: JSON.stringify({ method: 'qr', qrToken, locationId }),
+    body: JSON.stringify({ method: 'email', email, locationId }),
   });
 }
 
 export function selfCheckOut(
   token: string,
-  qrToken: string,
+  email: string,
   locationId: string,
 ): Promise<CheckInResponse> {
   return req<CheckInResponse>('/checkout', token, {
     method: 'POST',
-    body: JSON.stringify({ method: 'qr', qrToken, locationId }),
+    body: JSON.stringify({ method: 'email', email, locationId }),
   });
 }
 
