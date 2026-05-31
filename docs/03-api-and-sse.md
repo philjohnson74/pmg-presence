@@ -194,7 +194,7 @@ person type, direction, method, location, timestamp.
 ## 3.5 SSE event schema
 
 One SSE channel: `GET /api/onsite/stream` (auth via query token, §3.6). The server pushes
-named events; clients (marshal app, admin live view) subscribe.
+named events; clients (employee app, admin live view) subscribe.
 
 ```ts
 // packages/contracts/sse.ts
@@ -219,10 +219,10 @@ data: {"fireEventId":"fire-...","triggeredAt":"2026-05-30T09:05:00Z","rollCall":
 ```
 
 Client behaviour:
-- **Marshal app** in normal mode renders `onsite.changed` into the live list and refreshes the
-  IndexedDB cache (doc 05). On `fire.triggered` it switches to **evacuation mode**, seeds the
+- **Employee app** in normal mode renders `onsite.changed` into the live list and refreshes the
+  IndexedDB cache (doc 05). On `fire.triggered` it switches to **evacuation mode** for marshals, seeds the
   roll-call from the event payload, and thereafter applies `rollcall.updated` deltas.
-- **`heartbeat`** doubles as the cache-freshness clock — the marshal UI shows "updated Ns ago".
+- **`heartbeat`** doubles as the cache-freshness clock — the employee app UI shows "updated Ns ago".
 - `id:` enables `Last-Event-ID` resumption; on reconnect the client sends it and the broker
   replays missed events from a small ring buffer (best-effort; full state is re-fetched on
   reconnect regardless).

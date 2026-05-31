@@ -23,7 +23,7 @@ A working, end-to-end **presence + fire roll-call** system across three clients:
 |-----|----------|---------|
 | **Admin Portal** | Operations / facilities | Manage employees, view live on-site list, search visit history |
 | **Reception Kiosk** | Public (unauthenticated tablet) | Self-service check-in/out for employees, visitors and patients; fire alarm trigger |
-| **Employee / Marshal PWA** | Staff + fire marshals | Personal QR check-in/out; offline-capable live roll-call during evacuation |
+| **Employee PWA** | Staff + fire marshals | Personal QR check-in/out; offline-capable live roll-call during evacuation |
 
 The single most important deliverable is **trustworthy roll-call** — the fire marshal's
 phone must show who is physically present, even offline, the moment the alarm sounds.
@@ -40,8 +40,8 @@ phone must show who is physically present, even offline, the moment the alarm so
 | **Phase 5** | Patient lookup | ✅ Complete |
 | **Phase 6** | Fire trigger + roll-call API + SSE | ✅ Complete |
 | **Phase 7** | Admin Portal UI | ✅ Complete |
-| **Phase 8** | Reception Kiosk UI | ✅ Complete |
-| **Phase 9** | Employee / Marshal PWA UI | 🔲 Next |
+| **Phase 8** | Reception Kiosk UI | 🔲 Pending |
+| **Phase 9** | Employee PWA UI | ✅ Complete |
 | **Phase 10** | Offline (Service Worker + IndexedDB) | 🔲 Pending |
 | **Phase 11** | Observability, OpenAPI, E2E, polish | 🔲 Pending |
 
@@ -64,7 +64,7 @@ Services on fixed ports:
 | API + Swagger | http://localhost:4000 |
 | Admin Portal | http://localhost:5173 |
 | Reception Kiosk | http://localhost:5174 |
-| Marshal / Employee PWA | http://localhost:5175 |
+| Employee PWA | http://localhost:5175 |
 
 Stop all services: **Ctrl + C** in the terminal.
 

@@ -113,7 +113,7 @@ Commit per phase on a feature branch; CI green before merge (doc 07).
   no-email/no-phone employee by the manual "Find me" path; the fire button (with confirm) locks the
   kiosk and fires the alarm.
 
-### Phase 9 — Marshal/Employee PWA UI  *(~45 min)*
+### Phase 9 — Employee / Marshal PWA UI  *(~45 min)*
 **Goal:** the deliverable that matters most — roll-call.
 - Employee mode: rotating **My QR**, self check-in/out buttons, my visits.
 - Marshal mode: live on-site list (SSE); **evacuation view** with red/amber/green tiles,

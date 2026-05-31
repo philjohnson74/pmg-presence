@@ -1,5 +1,5 @@
 {
-  "name": "@pmg/marshal",
+  "name": "@pmg/employee",
   "version": "0.0.1",
   "private": true,
   "type": "module",
@@ -11,10 +11,13 @@
     "lint": "eslint src"
   },
   "dependencies": {
+    "@pmg/auth-client": "workspace:*",
     "@pmg/contracts": "workspace:*",
     "@pmg/ui": "workspace:*",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "react-qr-code": "^2.0.15",
+    "react-router-dom": "^6.29.0"
   },
   "devDependencies": {
     "@pmg/config": "workspace:*",
