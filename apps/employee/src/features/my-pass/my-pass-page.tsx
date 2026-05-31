@@ -5,7 +5,7 @@ import { RotatingQr } from './rotating-qr.js';
 import { SelfCheckInButtons } from './self-check-in-buttons.js';
 
 export function MyPassPage() {
-  const { token } = useSession();
+  const { token, user } = useSession();
   const qr = useQrToken(token);
 
   return (
@@ -35,7 +35,9 @@ export function MyPassPage() {
       {qr.qrToken && (
         <div className="flex flex-col items-center gap-8">
           <RotatingQr qrToken={qr.qrToken} expiresAt={qr.expiresAt} />
-          {token && <SelfCheckInButtons authToken={token} qrToken={qr.qrToken} />}
+          {token && user?.email && (
+            <SelfCheckInButtons authToken={token} email={user.email} />
+          )}
         </div>
       )}
     </div>

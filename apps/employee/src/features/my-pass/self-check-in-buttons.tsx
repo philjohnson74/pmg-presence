@@ -4,12 +4,12 @@ import { selfCheckIn, selfCheckOut } from '../../lib/api.js';
 
 interface Props {
   authToken: string;
-  qrToken: string;
+  email: string;
 }
 
 type Status = 'idle' | 'loading' | 'checked-in' | 'checked-out' | 'error';
 
-export function SelfCheckInButtons({ authToken, qrToken }: Readonly<Props>) {
+export function SelfCheckInButtons({ authToken, email }: Readonly<Props>) {
   const [status, setStatus] = useState<Status>('idle');
   const [message, setMessage] = useState<string | null>(null);
 
@@ -23,7 +23,7 @@ export function SelfCheckInButtons({ authToken, qrToken }: Readonly<Props>) {
   async function handleCheckIn() {
     setStatus('loading');
     try {
-      const res = await selfCheckIn(authToken, qrToken, 'loc-reception');
+      const res = await selfCheckIn(authToken, email, 'loc-reception');
       setStatus('checked-in');
       setMessage(res.alreadyOnsite ? 'Already checked in' : 'Checked in ✓');
     } catch {
@@ -36,7 +36,7 @@ export function SelfCheckInButtons({ authToken, qrToken }: Readonly<Props>) {
   async function handleCheckOut() {
     setStatus('loading');
     try {
-      await selfCheckOut(authToken, qrToken, 'loc-reception');
+      await selfCheckOut(authToken, email, 'loc-reception');
       setStatus('checked-out');
       setMessage('Checked out ✓');
     } catch {
