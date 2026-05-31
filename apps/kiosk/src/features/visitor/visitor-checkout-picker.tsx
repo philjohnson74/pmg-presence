@@ -14,7 +14,7 @@ export function VisitorCheckoutPicker({ onSuccess }: Props) {
 
   useEffect(() => {
     fetchCheckedInVisitors()
-      .then(setVisitors)
+      .then((vs) => setVisitors(vs.slice().sort((a, b) => a.displayName.localeCompare(b.displayName))))
       .catch(() => setError('Could not load visitor list.'))
       .finally(() => setLoading(false));
   }, []);

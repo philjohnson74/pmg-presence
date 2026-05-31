@@ -69,9 +69,9 @@ function OnsiteContent({ token }: Readonly<{ token: string | null }>) {
   }, [stream.counts, load]);
 
   const counts = stream.counts ?? data?.counts;
-  const occupants = filter
+  const occupants = (filter
     ? (data?.occupants ?? []).filter((o) => o.personType === filter)
-    : (data?.occupants ?? []);
+    : (data?.occupants ?? [])).slice().sort((a, b) => a.displayName.localeCompare(b.displayName));
 
   return (
     <div className="space-y-6">

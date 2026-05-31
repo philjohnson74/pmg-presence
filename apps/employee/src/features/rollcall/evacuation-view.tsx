@@ -101,9 +101,10 @@ export function EvacuationView({ rollCall, lastSynced, onMarkAccounted }: Readon
     }
   }
 
-  const unaccounted = rollCall.entries.filter((e) => e.state === 'unaccounted');
-  const amber = rollCall.entries.filter((e) => e.state === 'expected-absent');
-  const accounted = rollCall.entries.filter((e) => e.state === 'accounted');
+  const byName = (a: RollCallEntry, b: RollCallEntry) => a.displayName.localeCompare(b.displayName);
+  const unaccounted = rollCall.entries.filter((e) => e.state === 'unaccounted').slice().sort(byName);
+  const amber = rollCall.entries.filter((e) => e.state === 'expected-absent').slice().sort(byName);
+  const accounted = rollCall.entries.filter((e) => e.state === 'accounted').slice().sort(byName);
 
   return (
     <div className="fixed inset-0 z-50 bg-pmg-navy flex flex-col overflow-hidden">

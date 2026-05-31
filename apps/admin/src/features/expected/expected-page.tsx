@@ -78,7 +78,7 @@ function DayView({ date, label }: Readonly<{ date: string; label: string }>) {
         ) : people.length === 0 ? (
           <p className="px-5 py-4 text-sm text-gray-400">Nobody expected on this date.</p>
         ) : (
-          people.map((person) => (
+          people.slice().sort((a, b) => a.displayName.localeCompare(b.displayName)).map((person) => (
             <div key={person.personId} className="px-5 py-3 flex items-center gap-3">
               <div
                 className={`h-2 w-2 rounded-full flex-shrink-0 ${

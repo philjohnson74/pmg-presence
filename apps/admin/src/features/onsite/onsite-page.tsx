@@ -141,7 +141,7 @@ export function OnsitePage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {data?.occupants.map((occ) => (
+              {data?.occupants.slice().sort((a, b) => a.displayName.localeCompare(b.displayName)).map((occ) => (
                 <tr key={occ.personId}>
                   <td className="px-4 py-3 font-medium text-pmg-navy">{occ.displayName}</td>
                   <td className="px-4 py-3">

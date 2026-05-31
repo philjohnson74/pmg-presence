@@ -197,8 +197,8 @@ export function EmployeesPage() {
     }
   }
 
-  const active = employees.filter((e) => e.active);
-  const inactive = employees.filter((e) => !e.active);
+  const active = employees.filter((e) => e.active).sort((a, b) => a.name.localeCompare(b.name));
+  const inactive = employees.filter((e) => !e.active).sort((a, b) => a.name.localeCompare(b.name));
 
   return (
     <div className="space-y-6">
