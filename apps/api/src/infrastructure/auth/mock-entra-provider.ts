@@ -13,7 +13,7 @@ export class MockEntraProvider {
   async login(userId: string): Promise<LoginResponse> {
     const employee = await this.employees.findById(userId);
     if (!employee?.active) {
-      return Promise.reject(Object.assign(new Error('Employee not found'), { code: 'NOT_FOUND' }));
+      throw Object.assign(new Error('Employee not found'), { code: 'NOT_FOUND' });
     }
 
     const user: AuthUser = {
