@@ -35,8 +35,8 @@ phone must show who is physically present, even offline, the moment the alarm so
 | **Phase 0** | Monorepo skeleton & tooling | ✅ Complete |
 | **Phase 1** | Domain + in-memory repositories + seed | ✅ Complete |
 | **Phase 2** | Auth: mock SSO + JWT + RBAC middleware | ✅ Complete |
-| **Phase 3** | Check-in/out API + event log + debounce | 🔲 Next |
-| **Phase 4** | QR issuance + validation | 🔲 Pending |
+| **Phase 3** | Check-in/out API + event log + debounce | ✅ Complete |
+| **Phase 4** | QR issuance + validation | 🔲 Next |
 | **Phase 5** | Patient lookup | 🔲 Pending |
 | **Phase 6** | Fire trigger + roll-call API + SSE | 🔲 Pending |
 | **Phase 7** | Admin Portal UI | 🔲 Pending |
