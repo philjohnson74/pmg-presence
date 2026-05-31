@@ -8,7 +8,7 @@ export class JwtService implements JwtServicePort {
   ) {}
 
   sign(payload: Omit<JwtClaims, 'iat' | 'exp'>): string {
-    return jwt.sign(payload as object, this.secret, {
+    return jwt.sign(payload, this.secret, {
       algorithm: 'HS256',
       expiresIn: this.expiresInSeconds,
     });
@@ -17,9 +17,9 @@ export class JwtService implements JwtServicePort {
   verify(token: string): JwtClaims {
     const decoded = jwt.verify(token, this.secret, { algorithms: ['HS256'] });
     if (typeof decoded === 'string') {
-      throw new Error('Invalid token payload');
+      throw new TypeError('Invalid token payload');
     }
-    return decoded as unknown as JwtClaims;
+    return decoded as JwtClaims;
   }
 
   verifyRaw(token: string): Record<string, unknown> {
