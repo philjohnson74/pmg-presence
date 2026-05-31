@@ -9,6 +9,7 @@ import type {
   VisitorRepository,
 } from '../../domain/repositories.js';
 import type { ClinicalSystemPort, JwtServicePort } from '../../domain/ports.js';
+import type { JtiStore } from '../../domain/jti-store.js';
 import { NotFoundError, ValidationError } from '../errors.js';
 
 export interface CheckInEventDeps {
@@ -19,6 +20,7 @@ export interface CheckInEventDeps {
   clinicalSystem: ClinicalSystemPort;
   auditLog: AuditLogRepository;
   jwtService: JwtServicePort;
+  jtiStore?: JtiStore;
 }
 
 const DEBOUNCE_MS = 5_000;
@@ -37,6 +39,10 @@ interface Resolution {
   displayName: string;
   visitCategory?: VisitCategory;
   pass?: VisitorPassResponse;
+  /** JTI from the QR token — present only for method:'qr' */
+  jti?: string;
+  /** Token expiry — used to bound the JTI store entry */
+  jtiExpiresAt?: Date;
 }
 
 export class CheckInEventUseCase {
@@ -48,7 +54,23 @@ export class CheckInEventUseCase {
     requestedBy: string,
   ): Promise<CheckInResponse> {
     const resolution = await this.resolvePerson(input);
-    const { personId, personType, displayName, pass } = resolution;
+    const { personId, personType, displayName, pass, jti, jtiExpiresAt } = resolution;
+
+    // JTI replay check — if this exact QR scan was already processed, return the same event
+    if (jti && this.deps.jtiStore) {
+      const stored = this.deps.jtiStore.check(jti);
+      if (stored) {
+        return {
+          eventId: stored.eventId,
+          personType: stored.personType,
+          displayName: stored.displayName,
+          direction: stored.direction,
+          timestamp: stored.timestamp,
+          alreadyOnsite: stored.direction === 'in',
+          debounced: true,
+        };
+      }
+    }
 
     // Debounce: return existing event if same (personId, direction) within 5s
     const debounced = await this.checkDebounce(personId, direction);
@@ -75,6 +97,15 @@ export class CheckInEventUseCase {
       locationId: input.locationId,
       displayName,
     });
+
+    // Mark JTI as used so replays are debounced for the token's remaining lifetime
+    if (jti && jtiExpiresAt && this.deps.jtiStore) {
+      this.deps.jtiStore.mark(
+        jti,
+        { eventId: event.id, direction, personType, displayName, timestamp: event.timestamp },
+        jtiExpiresAt,
+      );
+    }
 
     if (input.method === 'manual') {
       await this.deps.auditLog.record({
@@ -182,7 +213,15 @@ export class CheckInEventUseCase {
     if (typ === 'qr') {
       const emp = await this.deps.employees.findById(sub);
       if (!emp || !emp.active) throw new NotFoundError('Employee not found or inactive');
-      return { personId: emp.id, personType: 'employee', displayName: emp.name };
+      const jti = payload['jti'] as string | undefined;
+      const exp = payload['exp'] as number | undefined;
+      return {
+        personId: emp.id,
+        personType: 'employee',
+        displayName: emp.name,
+        ...(jti ? { jti } : {}),
+        ...(exp ? { jtiExpiresAt: new Date(exp * 1000) } : {}),
+      };
     }
 
     if (typ === 'visit-pass') {
