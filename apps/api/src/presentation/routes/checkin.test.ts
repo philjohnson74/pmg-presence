@@ -2,8 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import request from 'supertest';
 import { buildTestContainer } from '../../container.js';
 import { createServer } from '../server.js';
-import type { Employee } from '../../domain/entities.js';
-import type { Patient } from '../../domain/entities.js';
+import type { Employee, Patient } from '../../domain/entities.js';
 
 // ─── Shared test fixtures ──────────────────────────────────────────────────────
 
