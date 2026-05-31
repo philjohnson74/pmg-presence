@@ -1,6 +1,5 @@
 import { randomInt, randomUUID } from 'node:crypto';
-import type { Direction, PersonType, VisitCategory } from '@pmg/contracts';
-import type { CheckInRequest, CheckInResponse, VisitorPassResponse } from '@pmg/contracts';
+import type { CheckInRequest, CheckInResponse, Direction, PersonType, VisitCategory, VisitorPassResponse } from '@pmg/contracts';
 import type {
   AuditLogRepository,
   CheckInEventRepository,
@@ -150,7 +149,7 @@ export class CheckInEventUseCase {
     if (method === 'email') {
       if (!input.email) throw new ValidationError('email is required for method=email');
       const emp = await this.deps.employees.findByEmail(input.email);
-      if (!emp || !emp.active) throw new NotFoundError('Employee not found');
+      if (!emp?.active) throw new NotFoundError('Employee not found');
       return { personId: emp.id, personType: 'employee', displayName: emp.name };
     }
 
@@ -190,7 +189,7 @@ export class CheckInEventUseCase {
     }
     if (personType === 'employee') {
       const emp = await this.deps.employees.findById(personId);
-      if (!emp || !emp.active) throw new NotFoundError('Employee not found');
+      if (!emp?.active) throw new NotFoundError('Employee not found');
       return { personId: emp.id, personType: 'employee', displayName: emp.name };
     }
     throw new ValidationError('Unsupported personType');
@@ -212,7 +211,7 @@ export class CheckInEventUseCase {
 
     if (typ === 'qr') {
       const emp = await this.deps.employees.findById(sub);
-      if (!emp || !emp.active) throw new NotFoundError('Employee not found or inactive');
+      if (!emp?.active) throw new NotFoundError('Employee not found or inactive');
       const jti = payload['jti'] as string | undefined;
       const exp = payload['exp'] as number | undefined;
       return {
@@ -319,7 +318,7 @@ export class CheckInEventUseCase {
         const needle = manual.name.toLowerCase().trim();
         emp = all.find((e) => e.name.toLowerCase().includes(needle)) ?? null;
       }
-      if (!emp || !emp.active) throw new NotFoundError('Employee not found');
+      if (!emp?.active) throw new NotFoundError('Employee not found');
       return { personId: emp.id, personType: 'employee', displayName: emp.name };
     }
 
