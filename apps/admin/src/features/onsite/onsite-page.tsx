@@ -40,7 +40,7 @@ export function OnsitePage() {
   useEffect(() => { void load(); }, [load]);
   useEffect(() => {
     if (stream.counts) void load();
-  }, [stream.counts]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [stream.counts, load]);
 
   const counts = stream.counts ?? data?.counts;
 
