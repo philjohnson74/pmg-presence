@@ -9,6 +9,10 @@ function makeApp(overrides: Parameters<typeof buildTestContainer>[0] = {}) {
   return createServer(buildTestContainer(overrides));
 }
 
+function lookup(app: Express, params: Record<string, string>) {
+  return request(app).get('/api/patients/lookup').query(params);
+}
+
 describe('GET /api/patients/lookup', () => {
   let app: Express;
 
@@ -19,9 +23,7 @@ describe('GET /api/patients/lookup', () => {
   // ── Successful match ────────────────────────────────────────────────────────
 
   it('returns a match for exact name and DOB', async () => {
-    const res = await request(app)
-      .get('/api/patients/lookup')
-      .query({ name: 'Joan Webb', dob: '1951-03-14' });
+    const res = await lookup(app, { name: 'Joan Webb', dob: '1951-03-14' });
 
     expect(res.status).toBe(200);
     expect(res.body).toMatchObject({
@@ -33,9 +35,7 @@ describe('GET /api/patients/lookup', () => {
   });
 
   it('is case-insensitive on name', async () => {
-    const res = await request(app)
-      .get('/api/patients/lookup')
-      .query({ name: 'joan webb', dob: '1951-03-14' });
+    const res = await lookup(app, { name: 'joan webb', dob: '1951-03-14' });
 
     expect(res.status).toBe(200);
     expect(res.body.match).toBe(true);
@@ -53,9 +53,7 @@ describe('GET /api/patients/lookup', () => {
         },
       ],
     });
-    const res = await request(diacriticApp)
-      .get('/api/patients/lookup')
-      .query({ name: 'Renee Fontaine', dob: '1989-06-30' });
+    const res = await lookup(diacriticApp, { name: 'Renee Fontaine', dob: '1989-06-30' });
 
     expect(res.status).toBe(200);
     expect(res.body.match).toBe(true);
@@ -63,9 +61,7 @@ describe('GET /api/patients/lookup', () => {
   });
 
   it('tolerates extra whitespace in the name', async () => {
-    const res = await request(app)
-      .get('/api/patients/lookup')
-      .query({ name: '  Joan   Webb  ', dob: '1951-03-14' });
+    const res = await lookup(app, { name: '  Joan   Webb  ', dob: '1951-03-14' });
 
     expect(res.status).toBe(200);
     expect(res.body.match).toBe(true);
@@ -74,18 +70,14 @@ describe('GET /api/patients/lookup', () => {
   // ── No-match cases ──────────────────────────────────────────────────────────
 
   it('returns match:false for an unknown patient', async () => {
-    const res = await request(app)
-      .get('/api/patients/lookup')
-      .query({ name: 'Nobody Here', dob: '1990-01-01' });
+    const res = await lookup(app, { name: 'Nobody Here', dob: '1990-01-01' });
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ match: false });
   });
 
   it('returns match:false when DOB is wrong even if name matches', async () => {
-    const res = await request(app)
-      .get('/api/patients/lookup')
-      .query({ name: 'Joan Webb', dob: '1960-01-01' });
+    const res = await lookup(app, { name: 'Joan Webb', dob: '1960-01-01' });
 
     expect(res.status).toBe(200);
     expect(res.body).toEqual({ match: false });
@@ -94,9 +86,7 @@ describe('GET /api/patients/lookup', () => {
   // ── Data minimisation ───────────────────────────────────────────────────────
 
   it('does not expose DOB or clinicalSystemId in the response', async () => {
-    const res = await request(app)
-      .get('/api/patients/lookup')
-      .query({ name: 'Joan Webb', dob: '1951-03-14' });
+    const res = await lookup(app, { name: 'Joan Webb', dob: '1951-03-14' });
 
     expect(res.body).not.toHaveProperty('dateOfBirth');
     expect(res.body).not.toHaveProperty('dob');
@@ -106,48 +96,28 @@ describe('GET /api/patients/lookup', () => {
   // ── Input validation ────────────────────────────────────────────────────────
 
   it('returns 400 when name is missing', async () => {
-    const res = await request(app)
-      .get('/api/patients/lookup')
-      .query({ dob: '1951-03-14' });
-
-    expect(res.status).toBe(400);
+    expect((await lookup(app, { dob: '1951-03-14' })).status).toBe(400);
   });
 
   it('returns 400 when dob is missing', async () => {
-    const res = await request(app)
-      .get('/api/patients/lookup')
-      .query({ name: 'Joan Webb' });
-
-    expect(res.status).toBe(400);
+    expect((await lookup(app, { name: 'Joan Webb' })).status).toBe(400);
   });
 
   it('returns 400 for an invalid DOB format', async () => {
-    const res = await request(app)
-      .get('/api/patients/lookup')
-      .query({ name: 'Joan Webb', dob: '14/03/1951' });
-
-    expect(res.status).toBe(400);
+    expect((await lookup(app, { name: 'Joan Webb', dob: '14/03/1951' })).status).toBe(400);
   });
 
   it('returns 400 for a future DOB', async () => {
-    const res = await request(app)
-      .get('/api/patients/lookup')
-      .query({ name: 'Joan Webb', dob: '2099-01-01' });
-
-    expect(res.status).toBe(400);
+    expect((await lookup(app, { name: 'Joan Webb', dob: '2099-01-01' })).status).toBe(400);
   });
 
   // ── Rate limiting ───────────────────────────────────────────────────────────
 
   it('returns 429 after 5 requests within the window', async () => {
     for (let i = 0; i < 5; i++) {
-      await request(app)
-        .get('/api/patients/lookup')
-        .query({ name: 'Unknown', dob: '1990-01-01' });
+      await lookup(app, { name: 'Unknown', dob: '1990-01-01' });
     }
-    const res = await request(app)
-      .get('/api/patients/lookup')
-      .query({ name: 'Unknown', dob: '1990-01-01' });
+    const res = await lookup(app, { name: 'Unknown', dob: '1990-01-01' });
 
     expect(res.status).toBe(429);
   });

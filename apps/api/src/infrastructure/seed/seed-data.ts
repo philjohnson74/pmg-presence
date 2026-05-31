@@ -42,70 +42,23 @@ export const EMPLOYEES: Employee[] = [
 // ─── Patients (9) — mock clinical system records ──────────────────────────────
 // Note: DOB is stored here for lookup matching only — PMG never persists it.
 
+function makePatient(
+  id: string, name: string, dateOfBirth: string,
+  patientReference: string, clinicalSystemId: string,
+): Patient {
+  return { id, name, dateOfBirth, patientReference, clinicalSystemId };
+}
+
 export const PATIENTS: Patient[] = [
-  {
-    id: 'pat-001',
-    name: 'Joan Webb',
-    dateOfBirth: '1951-03-14',
-    patientReference: 'PMG-OUT-4471',
-    clinicalSystemId: 'CLIN-88201',
-  },
-  {
-    id: 'pat-002',
-    name: 'Harold Spencer',
-    dateOfBirth: '1948-11-02',
-    patientReference: 'PMG-OUT-4472',
-    clinicalSystemId: 'CLIN-88210',
-  },
-  {
-    id: 'pat-003',
-    name: 'Renée Fontaine', // diacritic — "renee fontaine" must also match
-    dateOfBirth: '1989-06-30',
-    patientReference: 'PMG-OUT-4473',
-    clinicalSystemId: 'CLIN-88233',
-  },
-  {
-    id: 'pat-004',
-    name: 'Owen Pritchard',
-    dateOfBirth: '2011-09-21',
-    patientReference: 'PMG-OUT-4474',
-    clinicalSystemId: 'CLIN-88240',
-  },
-  {
-    id: 'pat-005',
-    name: 'Maria Santos',
-    dateOfBirth: '1976-01-08',
-    patientReference: 'PMG-OUT-4475',
-    clinicalSystemId: 'CLIN-88255',
-  },
-  {
-    id: 'pat-006',
-    name: 'Derek Lowe',
-    dateOfBirth: '1963-04-17',
-    patientReference: 'PMG-OUT-4476',
-    clinicalSystemId: 'CLIN-88261',
-  },
-  {
-    id: 'pat-007',
-    name: 'Amara Okafor',
-    dateOfBirth: '1995-12-05',
-    patientReference: 'PMG-OUT-4477',
-    clinicalSystemId: 'CLIN-88270',
-  },
-  {
-    id: 'pat-008',
-    name: 'Bill Thornton',
-    dateOfBirth: '1957-07-25',
-    patientReference: 'PMG-OUT-4478',
-    clinicalSystemId: 'CLIN-88288',
-  },
-  {
-    id: 'pat-009',
-    name: 'Sophie Allen',
-    dateOfBirth: '2003-02-11',
-    patientReference: 'PMG-OUT-4479',
-    clinicalSystemId: 'CLIN-88299',
-  },
+  makePatient('pat-001', 'Joan Webb',        '1951-03-14', 'PMG-OUT-4471', 'CLIN-88201'),
+  makePatient('pat-002', 'Harold Spencer',   '1948-11-02', 'PMG-OUT-4472', 'CLIN-88210'),
+  makePatient('pat-003', 'Renée Fontaine',   '1989-06-30', 'PMG-OUT-4473', 'CLIN-88233'), // diacritic — "renee fontaine" must also match
+  makePatient('pat-004', 'Owen Pritchard',   '2011-09-21', 'PMG-OUT-4474', 'CLIN-88240'),
+  makePatient('pat-005', 'Maria Santos',     '1976-01-08', 'PMG-OUT-4475', 'CLIN-88255'),
+  makePatient('pat-006', 'Derek Lowe',       '1963-04-17', 'PMG-OUT-4476', 'CLIN-88261'),
+  makePatient('pat-007', 'Amara Okafor',     '1995-12-05', 'PMG-OUT-4477', 'CLIN-88270'),
+  makePatient('pat-008', 'Bill Thornton',    '1957-07-25', 'PMG-OUT-4478', 'CLIN-88288'),
+  makePatient('pat-009', 'Sophie Allen',     '2003-02-11', 'PMG-OUT-4479', 'CLIN-88299'),
 ];
 
 // ─── Visitors (5) ─────────────────────────────────────────────────────────────

@@ -178,17 +178,11 @@ export class CheckInEventUseCase {
     }
 
     if (method === 'email') {
-      if (!input.email) throw new ValidationError('email is required for method=email');
-      const emp = await this.deps.employees.findByEmail(input.email);
-      if (!emp?.active) throw new NotFoundError('Employee not found');
-      return { personId: emp.id, personType: 'employee', displayName: emp.name };
+      return this.resolveEmail(input);
     }
 
     if (method === 'patient-lookup') {
-      if (!input.patientId) throw new ValidationError('patientId is required for method=patient-lookup');
-      const patient = await this.deps.clinicalSystem.findById(input.patientId);
-      if (!patient) throw new NotFoundError('Patient not found');
-      return { personId: input.patientId, personType: 'patient', displayName: patient.displayName };
+      return this.resolvePatientLookup(input);
     }
 
     if (method === 'visitor-form') {
@@ -200,6 +194,20 @@ export class CheckInEventUseCase {
     }
 
     throw new ValidationError('method is required');
+  }
+
+  private async resolveEmail(input: CheckInRequest): Promise<Resolution> {
+    if (!input.email) throw new ValidationError('email is required for method=email');
+    const emp = await this.deps.employees.findByEmail(input.email);
+    if (!emp?.active) throw new NotFoundError('Employee not found');
+    return { personId: emp.id, personType: 'employee', displayName: emp.name };
+  }
+
+  private async resolvePatientLookup(input: CheckInRequest): Promise<Resolution> {
+    if (!input.patientId) throw new ValidationError('patientId is required for method=patient-lookup');
+    const patient = await this.deps.clinicalSystem.findById(input.patientId);
+    if (!patient) throw new NotFoundError('Patient not found');
+    return { personId: input.patientId, personType: 'patient', displayName: patient.displayName };
   }
 
   private async resolveByPersonId(personId: string, personType: PersonType): Promise<Resolution> {

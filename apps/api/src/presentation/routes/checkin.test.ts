@@ -4,6 +4,25 @@ import { buildTestContainer } from '../../container.js';
 import { createServer } from '../server.js';
 import { ADMIN, MARSHAL, EMPLOYEE, NO_EMAIL_EMPLOYEE, TEST_PATIENT, getToken } from './test-fixtures.js';
 
+const RECEPTION = { id: 'loc-reception', name: 'Main Reception', type: 'reception' as const };
+
+const GARY_IN = {
+  personId: 'emp-regular',
+  personType: 'employee' as const,
+  direction: 'in' as const,
+  method: 'email' as const,
+  locationId: 'loc-reception',
+  displayName: 'Gary Cooper',
+};
+
+function buildBase(extra: Parameters<typeof buildTestContainer>[0] = {}) {
+  const container = buildTestContainer(extra);
+  container.employees.seed(ADMIN);
+  container.employees.seed(EMPLOYEE);
+  container.locations.seed(RECEPTION);
+  return { container, app: createServer(container) };
+}
+
 // ─── POST /api/checkin ─────────────────────────────────────────────────────────
 
 describe('POST /api/checkin', () => {
@@ -11,13 +30,9 @@ describe('POST /api/checkin', () => {
   let app: ReturnType<typeof createServer>;
 
   beforeEach(() => {
-    container = buildTestContainer({ patients: [TEST_PATIENT] });
-    container.employees.seed(ADMIN);
+    ({ container, app } = buildBase({ patients: [TEST_PATIENT] }));
     container.employees.seed(MARSHAL);
-    container.employees.seed(EMPLOYEE);
     container.employees.seed(NO_EMAIL_EMPLOYEE);
-    container.locations.seed({ id: 'loc-reception', name: 'Main Reception', type: 'reception' });
-    app = createServer(container);
   });
 
   it('checks in an employee by email (201)', async () => {
@@ -268,22 +283,9 @@ describe('POST /api/checkout', () => {
   let app: ReturnType<typeof createServer>;
 
   beforeEach(async () => {
-    container = buildTestContainer();
-    container.employees.seed(ADMIN);
-    container.employees.seed(EMPLOYEE);
-    container.locations.seed({ id: 'loc-reception', name: 'Main Reception', type: 'reception' });
-    app = createServer(container);
-
+    ({ container, app } = buildBase());
     // Pre-check-in Gary so checkout has something to do
-    await container.checkInEvents.append({
-      personId: 'emp-regular',
-      personType: 'employee',
-      direction: 'in',
-      method: 'email',
-      locationId: 'loc-reception',
-      displayName: 'Gary Cooper',
-      timestamp: new Date(Date.now() - 10_000).toISOString(),
-    });
+    await container.checkInEvents.append({ ...GARY_IN, timestamp: new Date(Date.now() - 10_000).toISOString() });
   });
 
   it('checks out an employee by email (201)', async () => {
@@ -362,25 +364,11 @@ describe('GET /api/onsite', () => {
   let employeeToken: string;
 
   beforeEach(async () => {
-    container = buildTestContainer();
-    container.employees.seed(ADMIN);
+    ({ container, app } = buildBase());
     container.employees.seed(MARSHAL);
-    container.employees.seed(EMPLOYEE);
-    container.locations.seed({ id: 'loc-reception', name: 'Main Reception', type: 'reception' });
-    app = createServer(container);
-
     adminToken = await getToken(app, 'emp-admin');
     employeeToken = await getToken(app, 'emp-regular');
-
-    // Seed one on-site event
-    await container.checkInEvents.append({
-      personId: 'emp-regular',
-      personType: 'employee',
-      direction: 'in',
-      method: 'email',
-      locationId: 'loc-reception',
-      displayName: 'Gary Cooper',
-    });
+    await container.checkInEvents.append(GARY_IN);
   });
 
   it('returns 200 + snapshot for admin', async () => {
@@ -439,23 +427,10 @@ describe('GET /api/visits/history', () => {
   let employeeToken: string;
 
   beforeEach(async () => {
-    container = buildTestContainer();
-    container.employees.seed(ADMIN);
-    container.employees.seed(EMPLOYEE);
-    container.locations.seed({ id: 'loc-reception', name: 'Main Reception', type: 'reception' });
-    app = createServer(container);
-
+    ({ container, app } = buildBase());
     adminToken = await getToken(app, 'emp-admin');
     employeeToken = await getToken(app, 'emp-regular');
-
-    await container.checkInEvents.append({
-      personId: 'emp-regular',
-      personType: 'employee',
-      direction: 'in',
-      method: 'email',
-      locationId: 'loc-reception',
-      displayName: 'Gary Cooper',
-    });
+    await container.checkInEvents.append(GARY_IN);
   });
 
   it('returns 200 + records for admin', async () => {
@@ -512,31 +487,10 @@ describe('GET /api/employees/me/visits', () => {
   let employeeToken: string;
 
   beforeEach(async () => {
-    container = buildTestContainer();
-    container.employees.seed(ADMIN);
-    container.employees.seed(EMPLOYEE);
-    container.locations.seed({ id: 'loc-reception', name: 'Main Reception', type: 'reception' });
-    app = createServer(container);
-
+    ({ container, app } = buildBase());
     employeeToken = await getToken(app, 'emp-regular');
-
-    // Seed two events: one for Gary, one for another person
-    await container.checkInEvents.append({
-      personId: 'emp-regular',
-      personType: 'employee',
-      direction: 'in',
-      method: 'email',
-      locationId: 'loc-reception',
-      displayName: 'Gary Cooper',
-    });
-    await container.checkInEvents.append({
-      personId: 'emp-other',
-      personType: 'employee',
-      direction: 'in',
-      method: 'email',
-      locationId: 'loc-reception',
-      displayName: 'Other Person',
-    });
+    await container.checkInEvents.append(GARY_IN);
+    await container.checkInEvents.append({ ...GARY_IN, personId: 'emp-other', displayName: 'Other Person' });
   });
 
   it('returns only the current user\'s events', async () => {

@@ -91,7 +91,7 @@ export function makeOnsiteRouter(deps: OnsiteRouterDeps): Router {
 
     const rawLastEventId = req.headers['last-event-id'];
     const lastEventIdStr = Array.isArray(rawLastEventId) ? rawLastEventId[0] : rawLastEventId;
-    const lastEventId = lastEventIdStr ? parseInt(lastEventIdStr, 10) : undefined;
+    const lastEventId = lastEventIdStr ? Number.parseInt(lastEventIdStr, 10) : undefined;
 
     deps.broker.connect(res, claims.sub, lastEventId);
   });

@@ -52,7 +52,7 @@ export function registerSseBroker(getBrokerCount: () => number): void {
   _getBrokerCount = getBrokerCount;
 }
 
-new Gauge({
+export const sseConnectionsGauge = new Gauge({
   name: 'pmg_sse_connections',
   help: 'Active SSE stream connections',
   registers: [registry],
