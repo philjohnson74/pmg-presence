@@ -1,5 +1,4 @@
-import type { CheckInEvent, Employee, Patient, VisitBooking, Visitor } from '../../domain/entities.js';
-import type { Location } from '../../domain/entities.js';
+import type { CheckInEvent, Employee, Location, Patient, VisitBooking, Visitor } from '../../domain/entities.js';
 
 // ─── Canonical demo date ───────────────────────────────────────────────────────
 // All seed timestamps and expected-presence entries are relative to this date.

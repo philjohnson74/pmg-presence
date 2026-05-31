@@ -41,7 +41,7 @@ export interface PersonTypeBadgeProps extends React.HTMLAttributes<HTMLSpanEleme
   visitCategory?: VisitCategory;
 }
 
-export function PersonTypeBadge({ personType, visitCategory, className }: PersonTypeBadgeProps) {
+export function PersonTypeBadge({ personType, visitCategory, className }: Readonly<PersonTypeBadgeProps>) {
   const label =
     visitCategory && personType === 'visitor'
       ? `Visitor · ${visitCategory}`
@@ -66,7 +66,7 @@ const stateLabel: Record<RollCallState, string> = {
   'expected-absent': 'Expected – not signed in',
 };
 
-export function RollCallStateBadge({ state, className }: RollCallStateBadgeProps) {
+export function RollCallStateBadge({ state, className }: Readonly<RollCallStateBadgeProps>) {
   return (
     <Badge variant={state} className={className}>
       {stateLabel[state]}

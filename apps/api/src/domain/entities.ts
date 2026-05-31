@@ -166,6 +166,7 @@ export interface HistoryFilter {
   readonly to?: string;         // ISO date inclusive
   readonly name?: string;       // partial case-insensitive match on displayName
   readonly personType?: PersonType;
+  readonly personId?: string;   // exact match — used for /employees/me/visits
 }
 
 // ─── Patient (mock clinical system record — never stored in PMG DB) ───────────

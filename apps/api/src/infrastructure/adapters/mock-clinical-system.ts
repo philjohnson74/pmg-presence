@@ -23,6 +23,16 @@ export class MockClinicalSystem implements ClinicalSystemPort {
     }
     return null;
   }
+
+  async findById(id: string): Promise<PatientMatch | null> {
+    const patient = this.patients.find((p) => p.id === id);
+    if (!patient) return null;
+    return {
+      patientId: patient.id,
+      displayName: patient.name,
+      patientReference: patient.patientReference,
+    };
+  }
 }
 
 function normalise(value: string): string {

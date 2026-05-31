@@ -51,6 +51,12 @@ export class InMemoryVisitBookingRepository implements VisitBookingRepository {
     this.store.set(id, { ...booking, status: 'completed' });
   }
 
+  /** Update the passToken after creation (used for multi-day visitor pass re-signing). */
+  _updatePassToken(id: string, passToken: string): void {
+    const booking = this.store.get(id);
+    if (booking) this.store.set(id, { ...booking, passToken });
+  }
+
   /** Bypass ID generation for deterministic seed data. */
   seed(booking: VisitBooking): void {
     this.store.set(booking.id, booking);

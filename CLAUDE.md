@@ -4,11 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Current implementation status
 
-**Phase 2 — Auth: mock SSO + JWT + RBAC middleware is complete on branch `phase/2-auth-jwt-rbac`.**
+**Phase 3 — Check-in/out API + event log + debounce is complete on branch `phase/3-checkin-api` (PR open, not yet merged to `main`).**
 
-Next: **Phase 3 — Check-in/out API + event log + debounce** (see [docs/08-implementation-plan.md](docs/08-implementation-plan.md)).
+Next: **Phase 4 — QR issuance + validation** (see [docs/08-implementation-plan.md](docs/08-implementation-plan.md)).
 
-Create a branch before starting: `git checkout -b phase/3-checkin-api`
+Create a branch before starting: `git checkout -b phase/4-qr-issuance`
 
 ## Commands
 
@@ -73,6 +73,38 @@ All scripts are orchestrated by **Turborepo** (`turbo.json`); run them from the 
 - **`server.ts` updated** — now accepts a `Container` parameter; `index.ts` creates the container and passes it in.
 - **`packages/auth-client`** — new package: `AuthProvider` interface (`login`, `getToken`, `getUser`, `logout`) + `MockAuthProvider` (calls `POST /api/auth/login`, holds token in memory).
 - **Tests** — 117 passing; 6 `requireAuth` unit tests, 4 `requireRole` unit tests, 8 `auth` integration tests; typecheck and lint clean.
+
+## What Phase 3 delivered
+
+- **`CheckInEventUseCase`** (`application/use-cases/check-in-event.ts`) — single use case handling both check-in and check-out (direction is a parameter). Supports all five identity methods:
+  - `qr` — verifies a signed JWT (`typ:'qr'` for employees, `typ:'visit-pass'` for returning visitors); uses `JwtService.verifyRaw`
+  - `email` — resolves employee by email (case-insensitive, via repo)
+  - `patient-lookup` — resolves patient by `patientId` via `ClinicalSystemPort.findById` (no DOB re-query needed)
+  - `visitor-form` — creates a new `Visitor`; if `booking.endDate > startDate`, also creates a `VisitBooking` and issues a visitor-pass JWT + 6-char `passCode`
+  - `manual` — employee: resolve by `employeeNumber` or name (audit-flagged); patient: hand-keyed anonymous entry (audit-flagged)
+- **5-second server-side debounce** — if an identical `(personId, direction)` event arrives within 5s, returns the existing event with `debounced: true` (HTTP 200 instead of 201). Prevents duplicate rows from rapid double-scans.
+- **Visitor pass issuance** — multi-day bookings (`endDate > startDate`) get a `visit-pass` JWT (signed with `JwtService.signRaw`, expiry = end of booking's `endDate`) + a random 6-char alphanumeric `passCode`. The `_updatePassToken` helper on `InMemoryVisitBookingRepository` re-signs the token with the actual booking ID as `sub` after creation.
+- **New routes** (`presentation/routes/`):
+  - `POST /api/checkin` + `POST /api/checkout` — public (kiosk/employee app); accepts direct `personId + personType` for visitor/patient checkout from a kiosk picker
+  - `GET /api/onsite` — admin/marshal; live occupancy snapshot with optional `?type=` filter; returns `counts` + `visitorsByCategory`
+  - `GET /api/visits/history` — admin only; filterable by `?from=`, `?to=`, `?q=` (name), `?type=` (personType)
+  - `GET /api/employees/me/visits` — any authed user; returns their own events only (filtered by `personId` in `HistoryFilter`)
+- **`JwtService` extended** — `verifyRaw(token)` (verify + return raw payload for non-auth JWTs); `signRaw(payload, expiresAt: Date)` (sign with explicit expiry timestamp, supports past dates for testing)
+- **`ClinicalSystemPort` extended** — `findById(id)` added so patient check-in doesn't need to re-query by name+DOB
+- **`HistoryFilter` extended** — `personId?` added for `/employees/me/visits` filtering
+- **`CheckInRequest` extended** — `method` is now optional (allows direct `personId + personType` checkout); `personId?` added
+- **Login rate limiter moved inside `createServer`** — was module-level (shared across all test app instances, causing 429s in the test suite); now instantiated per server so each test gets a fresh counter
+- **Tests** — 147 passing (30 new integration tests covering all 5 check-in methods, debounce, multi-day booking + pass issuance, RBAC 401/403 on every protected route, history filtering)
+- **SonarCloud** — all 14 findings from the Phase 3 scan resolved across subsequent commits (redundant casts, wrong Error subclass, async idioms, duplicate imports, mock setup patterns, negated conditions, `Readonly<>` on React props, heading accessibility)
+
+### Known decisions from Phase 3
+
+- **`CheckInEventUseCase` handles both check-in and check-out** via a `direction` parameter. There is no separate `CheckOutUseCase` — the routes pass `'in'` or `'out'` and the use case resolves the person identically either way.
+- **Visitor checkout uses `personId + personType` directly** (no `method` required). The kiosk picker sends the visitor's ID; the use case resolves by direct repo lookup before the method-specific logic.
+- **`_updatePassToken` on `InMemoryVisitBookingRepository`** is an infrastructure-only escape hatch for re-signing the pass token with the actual booking ID. It is accessed via a type cast in the use case (`as { _updatePassToken?: … }`) — intentionally not on the `VisitBookingRepository` interface since Postgres would use an UPDATE and this is in-memory only.
+- **`signRaw` uses explicit `exp` unix timestamp**, not `expiresIn` seconds, so that passing a past `Date` produces a genuinely expired token (important for the QR expiry tests).
+- **`makeCheckInRouter` receives the full dep bag directly** (not the `Container` type) to keep the route layer decoupled from the container shape.
+- **Rate limiter is per-`createServer` call** — this is intentional; do not hoist it back to module level.
 
 ### Known decisions from Phase 2
 - **`makeRequireAuth(jwtService)`** is a factory (not a bare middleware) so the JWT service is injected — no module-level singleton, fully testable in isolation.

@@ -8,7 +8,7 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
       type: 'about:blank',
       title: err.message,
       status: err.statusCode,
-      ...(err.detail !== undefined ? { detail: err.detail } : {}),
+      ...(err.detail === undefined ? {} : { detail: err.detail }),
       instance: req.path,
     };
     res.status(err.statusCode).json(body);

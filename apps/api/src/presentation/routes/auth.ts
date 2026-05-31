@@ -10,10 +10,13 @@ const loginBodySchema = z.object({ userId: z.string().min(1) }).strict();
 export function makeAuthRouter(
   entraProvider: MockEntraProvider,
   requireAuth: RequestHandler,
+  loginRateLimiter?: RequestHandler,
 ): Router {
   const router = Router();
 
-  router.post('/auth/login', (req, res, next) => {
+  const loginHandlers: RequestHandler[] = loginRateLimiter ? [loginRateLimiter] : [];
+
+  router.post('/auth/login', ...loginHandlers, (req, res, next) => {
     const parsed = loginBodySchema.safeParse(req.body);
     if (!parsed.success) {
       return next(new ValidationError(JSON.stringify(parsed.error.flatten())));

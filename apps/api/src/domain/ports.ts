@@ -20,6 +20,7 @@ export interface CalendarPort {
 
 export interface ClinicalSystemPort {
   lookup(name: string, dob: string): Promise<PatientMatch | null>;
+  findById(id: string): Promise<PatientMatch | null>;
 }
 
 // ─── Push notification port ───────────────────────────────────────────────────
@@ -54,4 +55,8 @@ export interface JwtClaims {
 export interface JwtServicePort {
   sign(payload: Omit<JwtClaims, 'iat' | 'exp'>): string;
   verify(token: string): JwtClaims;
+  /** Verify any token signed with the same secret; returns raw decoded payload. */
+  verifyRaw(token: string): Record<string, unknown>;
+  /** Sign a token with a custom expiry date (for visitor pass tokens). */
+  signRaw(payload: Record<string, unknown>, expiresAt: Date): string;
 }
