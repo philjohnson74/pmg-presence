@@ -31,7 +31,7 @@ function AppShell() {
       {evacuation.rollCall && isMarshal && (
         <EvacuationView
           rollCall={evacuation.rollCall}
-          lastHeartbeat={evacuation.lastHeartbeat}
+          lastSynced={evacuation.lastSynced}
           onMarkAccounted={(personId, accountedFor) =>
             evacuation.markAccounted(personId, accountedFor)
           }

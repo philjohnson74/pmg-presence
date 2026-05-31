@@ -31,6 +31,9 @@ pnpm-debug.log*
 # Claude Code agent memory (local only)
 .claude/
 
+# Playwright MCP screenshots and logs
+.playwright-mcp/
+
 # OS / editor
 .DS_Store
 Thumbs.db

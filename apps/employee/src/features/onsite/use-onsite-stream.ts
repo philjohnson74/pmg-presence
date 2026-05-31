@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { OccupancyCounts, SseEvent } from '@pmg/contracts';
+import { getCachedOnsite } from '../../offline/db.js';
 
 export interface StreamState {
   counts: OccupancyCounts | null;
@@ -12,6 +13,14 @@ export function useOnsiteStream(token: string | null): StreamState {
   const [lastEvent, setLastEvent] = useState<string | null>(null);
   const [connected, setConnected] = useState(false);
   const esRef = useRef<EventSource | null>(null);
+
+  // Seed counts from IDB cache so the counter renders immediately on open
+  useEffect(() => {
+    if (!token) return;
+    void getCachedOnsite().then((cached) => {
+      if (cached) setCounts(cached.data.counts);
+    });
+  }, [token]);
 
   useEffect(() => {
     if (!token) return;

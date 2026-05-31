@@ -24,9 +24,12 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
         runtimeCaching: [
           {
-            urlPattern: /^https?:\/\/localhost:4000\/api\/onsite/,
+            // NetworkFirst for on-site + roll-call API calls: try live, fall back to
+            // the last cached response. This covers both /api/onsite and
+            // /api/onsite/rollcall regardless of origin (works through the dev proxy).
+            urlPattern: ({ url }: { url: URL }) => url.pathname.startsWith('/api/onsite'),
             handler: 'NetworkFirst',
-            options: { cacheName: 'onsite-cache' },
+            options: { cacheName: 'onsite-api-cache', networkTimeoutSeconds: 5 },
           },
         ],
       },

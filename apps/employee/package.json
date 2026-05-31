@@ -14,10 +14,12 @@
     "@pmg/auth-client": "workspace:*",
     "@pmg/contracts": "workspace:*",
     "@pmg/ui": "workspace:*",
+    "idb": "^8.0.3",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-qr-code": "^2.0.15",
-    "react-router-dom": "^6.29.0"
+    "react-router-dom": "^6.29.0",
+    "workbox-window": "^7.4.1"
   },
   "devDependencies": {
     "@pmg/config": "workspace:*",

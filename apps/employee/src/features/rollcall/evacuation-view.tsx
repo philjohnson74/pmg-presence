@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import type { RollCallEntry } from '@pmg/contracts';
 import { RollCallTile } from './roll-call-tile.js';
 import { RollCallProgress } from './roll-call-progress.js';
@@ -12,7 +12,7 @@ interface RollCallSnapshot {
 
 interface Props {
   rollCall: RollCallSnapshot;
-  lastHeartbeat: Date | null;
+  lastSynced: Date | null;
   onMarkAccounted: (personId: string, accountedFor: boolean) => Promise<void>;
 }
 
@@ -51,7 +51,44 @@ function Section({
   );
 }
 
-export function EvacuationView({ rollCall, lastHeartbeat, onMarkAccounted }: Readonly<Props>) {
+function OfflineBanner() {
+  const [offline, setOffline] = useState(!navigator.onLine);
+
+  useEffect(() => {
+    const setOnline = () => setOffline(false);
+    const setOfflineState = () => setOffline(true);
+    window.addEventListener('online', setOnline);
+    window.addEventListener('offline', setOfflineState);
+    return () => {
+      window.removeEventListener('online', setOnline);
+      window.removeEventListener('offline', setOfflineState);
+    };
+  }, []);
+
+  if (!offline) return null;
+
+  const isIos =
+    /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+  return (
+    <div className="bg-amber-600/90 px-4 py-2 text-xs text-white flex items-start gap-2 flex-shrink-0">
+      <span className="mt-0.5">⚠</span>
+      <span>
+        Network offline — showing cached roll-call.{' '}
+        {isIos && (
+          <span>
+            On iOS, background sync requires the Capacitor native wrapper for reliable offline
+            operation.{' '}
+          </span>
+        )}
+        Accounted-for taps are queued and will replay on reconnect.
+      </span>
+    </div>
+  );
+}
+
+export function EvacuationView({ rollCall, lastSynced, onMarkAccounted }: Readonly<Props>) {
   const [loadingId, setLoadingId] = useState<string | null>(null);
 
   async function handleToggle(entry: RollCallEntry) {
@@ -86,10 +123,13 @@ export function EvacuationView({ rollCall, lastHeartbeat, onMarkAccounted }: Rea
               </p>
             </div>
           </div>
-          <FreshnessClock lastHeartbeat={lastHeartbeat} />
+          <FreshnessClock lastSynced={lastSynced} />
         </div>
         <RollCallProgress entries={rollCall.entries} />
       </div>
+
+      {/* Offline banner — shown when network is down */}
+      <OfflineBanner />
 
       {/* Tile grid — scrollable */}
       <div className="flex-1 overflow-y-auto p-4 space-y-6">
