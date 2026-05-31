@@ -11,6 +11,7 @@ import type { ClinicalSystemPort, JwtServicePort, SseBrokerPort } from '../../do
 import type { JtiStore } from '../../domain/jti-store.js';
 import type { OnsiteProjectionService } from '../services/onsite-projection-service.js';
 import { NotFoundError, ValidationError } from '../errors.js';
+import { checkinCounter, occupancyGauge } from '../../infrastructure/telemetry/metrics.js';
 
 export interface CheckInEventDeps {
   checkInEvents: CheckInEventRepository;
@@ -119,11 +120,18 @@ export class CheckInEventUseCase {
       });
     }
 
+    // Record metrics
+    checkinCounter.inc({ method: input.method ?? 'manual', direction, personType });
+
     // Broadcast live update — fire-and-forget, best-effort
     if (this.deps.broker && this.deps.onsiteProjection) {
       const broker = this.deps.broker;
       const { visitCategory } = resolution;
       void this.deps.onsiteProjection.getSnapshot().then((snapshot) => {
+        // Update occupancy gauges from the fresh snapshot
+        for (const [type, count] of Object.entries(snapshot.counts)) {
+          occupancyGauge.set({ personType: type }, count as number);
+        }
         broker.broadcast({
           event: 'onsite.changed',
           data: {

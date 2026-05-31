@@ -15,8 +15,10 @@ import { makePatientsRouter } from './routes/patients.js';
 import { makeFireRouter } from './routes/fire.js';
 import { makeExpectedRouter } from './routes/expected.js';
 import { makeEmployeesRouter } from './routes/employees.js';
+import { makeDocsRouter } from './routes/docs.js';
 import { errorHandler } from './middleware/error-handler.js';
 import { healthRouter } from './routes/health.js';
+import { registry, registerSseBroker } from '../infrastructure/telemetry/metrics.js';
 
 const ALLOWED_ORIGINS = [
   'http://localhost:5173', // admin
@@ -35,9 +37,20 @@ export function createServer(container: Container): Express {
     legacyHeaders: false,
   });
 
+  // Wire SSE broker into metrics so the gauge is populated at scrape time
+  registerSseBroker(() => container.broker.connectionCount);
+
   app.use(helmet());
   app.use(cors({ origin: ALLOWED_ORIGINS, credentials: true }));
   app.use(express.json());
+
+  // Prometheus metrics — plain text, no auth needed for a private scrape endpoint
+  app.get('/metrics', (_req, res) => {
+    void registry.metrics().then((metrics) => {
+      res.set('Content-Type', registry.contentType);
+      res.end(metrics);
+    });
+  });
 
   const requireAuth = makeRequireAuth(container.jwtService);
   const requireAdminOrMarshal = requireRole('admin', 'marshal');
@@ -99,6 +112,9 @@ export function createServer(container: Container): Express {
     requireAdmin,
     requireAdminOrMarshal,
   }));
+
+  // OpenAPI documentation
+  app.use('/api/docs', makeDocsRouter());
 
   app.use(errorHandler);
 

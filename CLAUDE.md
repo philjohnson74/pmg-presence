@@ -4,13 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Current implementation status
 
-**Phase 9 — Employee PWA UI is complete on branch `phase/9-employee-pwa-ui`.**
+**Phase 11 — Observability, OpenAPI, E2E, polish is complete. All phases are done.**
 
-Phase 8 (Reception Kiosk UI) was skipped and remains pending.
-
-Next: **Phase 10 — Offline (Service Worker + IndexedDB)** (see [docs/08-implementation-plan.md](docs/08-implementation-plan.md)).
-
-Create a branch before starting: `git checkout -b phase/10-offline-sw-indexeddb`
+All 11 phases are complete on their respective feature branches and merged to `main`.
+The system is demo-ready: `pnpm dev` brings up all four services; `pnpm test` runs 205
+unit + integration tests; `pnpm test:e2e` runs the 5 Playwright journeys.
 
 ## Commands
 
@@ -115,6 +113,37 @@ All scripts are orchestrated by **Turborepo** (`turbo.json`); run them from the 
 - **`makePatientsRouter(clinicalSystem)`** wired in `server.ts` alongside the returning-visitor router (both public, rate-limited).
 - **Tests** — 12 new integration tests: match, case-insensitivity, diacritic normalisation, whitespace tolerance, miss (unknown patient), miss (wrong DOB), data-minimisation assertions, 4 validation error cases (missing name, missing dob, invalid format, future date), rate-limit enforcement (429 on request 6).
 - **Total tests** — 172 passing.
+
+## What Phase 11 delivered
+
+- **Prometheus metrics** (`apps/api/src/infrastructure/telemetry/metrics.ts`) — custom registry via `prom-client`; `collectDefaultMetrics` for Node.js process stats; custom metrics:
+  - `pmg_checkin_total{method,direction,personType}` — counter; incremented in `CheckInEventUseCase`
+  - `pmg_patient_lookup_total{outcome}` — counter (match/miss); incremented in the patients route
+  - `pmg_fire_events_total` — counter; incremented in `TriggerFireEventUseCase`
+  - `pmg_rollcall_accounted_total` — counter; incremented in the `PATCH /api/onsite/rollcall/:personId` handler
+  - `pmg_auth_failures_total{reason}` — counter (missing_token/invalid_token); incremented in `requireAuth`
+  - `pmg_occupancy_current{personType}` — gauge; updated fire-and-forget after each check-in/out via SSE broadcast path
+  - `pmg_sse_connections` — gauge; lazily collected at scrape time from `SseBroker.connectionCount` via `registerSseBroker()`
+- **`GET /metrics`** — Prometheus scrape endpoint mounted in `server.ts` before any auth middleware; returns Prometheus text format.
+- **OpenAPI spec + Swagger UI** (`presentation/routes/docs.ts`) — hand-written OpenAPI 3.0 spec covering all 20+ routes; per-route security annotations; `swagger-ui-express` serves it at `GET /api/docs`.
+- **`playwright.config.ts`** — Playwright configuration with 4 `webServer` entries (API + 3 frontends) using `reuseExistingServer: true`; `workers: 1` (journeys share in-memory state, must run sequentially).
+- **5 E2E journey specs** (`e2e/`):
+  1. `01-employee-qr-checkin.spec.ts` — employee logs in, QR renders on My Pass; test seam fetches token from API and POSTs to `/api/checkin`; verifies on-site list.
+  2. `02-patient-checkin.spec.ts` — kiosk patient form: match (Joan Webb) + confirm; also no-match → manual fallback.
+  3. `03-visitor-signin.spec.ts` — kiosk visitor form (unique name); verifies via admin API on-site list.
+  4. `04-fire-alarm.spec.ts` — kiosk confirms emergency; marshal app receives SSE and shows evacuation overlay; cleanup resolves the event.
+  5. `05-marshal-rollcall.spec.ts` — two marshal contexts; fire triggered via API; marshal 1 marks accounted; marshal 2 sees SSE update.
+- **`e2e/helpers/api.ts`** — shared test helpers: `apiLogin`, `apiGet`, `apiPost`, `apiPatch`, `resolveFireIfActive`.
+- **README.md** updated — all phases marked complete; Swagger/metrics URLs in services table; Observability section with metrics table.
+- **Total tests** — 205 passing (no new Vitest tests needed; new routes covered by typecheck + manual verification).
+
+### Known decisions from Phase 11
+
+- **`prom-client` over full OTel SDK** — avoids ESM/auto-instrumentation complexity for a demo; same Prometheus wire format that OTel Prometheus exporter produces. Adding OTLP trace export is a one-file change: install `@opentelemetry/sdk-node` + `@opentelemetry/exporter-otlp-grpc`, call `sdk.start()` in `index.ts` before any imports.
+- **`registerSseBroker()` sets a module-level reference** — safe because the production container is a singleton; test containers don't call it so the gauge safely reads 0.
+- **Metrics module is a singleton** — `prom-client` metrics are registered once per process (module-level). Vitest runs all tests in one process with shared module cache, so registration happens once and tests don't conflict.
+- **`pmg_occupancy_current` is best-effort** — updated inside the fire-and-forget SSE broadcast callback, so a check-in that skips the broker/projection (e.g., test containers without broker) won't update the gauge. Acceptable for a demo scrape endpoint.
+- **E2E tests run `workers: 1`** — the in-memory API state is shared across journeys; parallel workers would cause race conditions on fire events and occupancy counts.
 
 ## What Phase 8 delivered
 

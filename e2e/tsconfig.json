@@ -1,0 +1,13 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    "outDir": "../dist/e2e",
+    "composite": false,
+    "incremental": false,
+    "noUncheckedIndexedAccess": false,
+    "types": ["node", "@playwright/test"]
+  },
+  "include": ["./**/*.ts"]
+}
