@@ -1,14 +1,11 @@
 name: Claude Code Review
 
+# Auto-review temporarily disabled — uncomment the block below and remove workflow_dispatch to re-enable.
+# on:
+#   pull_request:
+#     types: [opened, synchronize, ready_for_review, reopened]
 on:
-  pull_request:
-    types: [opened, synchronize, ready_for_review, reopened]
-    # Optional: Only run on specific file changes
-    # paths:
-    #   - "src/**/*.ts"
-    #   - "src/**/*.tsx"
-    #   - "src/**/*.js"
-    #   - "src/**/*.jsx"
+  workflow_dispatch:
 
 jobs:
   claude-review:

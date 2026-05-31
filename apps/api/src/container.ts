@@ -1,10 +1,13 @@
 import { ExpectedPresenceService } from './application/services/expected-presence-service.js';
 import { OnsiteProjectionService } from './application/services/onsite-projection-service.js';
+import { TriggerFireEventUseCase } from './application/use-cases/trigger-fire-event.js';
 import { InMemoryJtiStore } from './infrastructure/jti/in-memory-jti-store.js';
 import { MockM365Calendar } from './infrastructure/adapters/mock-m365-calendar.js';
 import { MockClinicalSystem } from './infrastructure/adapters/mock-clinical-system.js';
 import { JwtService } from './infrastructure/auth/jwt-service.js';
 import { MockEntraProvider } from './infrastructure/auth/mock-entra-provider.js';
+import { LoggingPushService } from './infrastructure/push/logging-push-service.js';
+import { SseBroker } from './infrastructure/sse/sse-broker.js';
 import { InMemoryAuditLogRepository } from './infrastructure/repositories/in-memory-audit-log-repository.js';
 import { InMemoryCheckInEventRepository } from './infrastructure/repositories/in-memory-check-in-event-repository.js';
 import { InMemoryEmployeeRepository } from './infrastructure/repositories/in-memory-employee-repository.js';
@@ -34,9 +37,14 @@ export interface Container {
   jwtService: JwtService;
   entraProvider: MockEntraProvider;
   jtiStore: InMemoryJtiStore;
+  // Infrastructure services
+  broker: SseBroker;
+  pushPort: LoggingPushService;
   // Application services
   onsiteProjection: OnsiteProjectionService;
   expectedPresence: ExpectedPresenceService;
+  // Use cases
+  triggerFireEvent: TriggerFireEventUseCase;
 }
 
 /** Production container — seeded with demo data. */
@@ -64,6 +72,10 @@ export function createContainer(): Container {
     config.jwtAudience,
   );
 
+  const broker = new SseBroker();
+  broker.startHeartbeat();
+  const pushPort = new LoggingPushService();
+
   const onsiteProjection = new OnsiteProjectionService(checkInEvents, visitors);
   const expectedPresence = new ExpectedPresenceService(
     calendar,
@@ -71,6 +83,15 @@ export function createContainer(): Container {
     checkInEvents,
     visitors,
   );
+
+  const triggerFireEvent = new TriggerFireEventUseCase({
+    fireEvents,
+    rollCall,
+    onsiteProjection,
+    expectedPresence,
+    broker,
+    pushPort,
+  });
 
   return {
     employees,
@@ -86,8 +107,11 @@ export function createContainer(): Container {
     jwtService,
     jtiStore,
     entraProvider,
+    broker,
+    pushPort,
     onsiteProjection,
     expectedPresence,
+    triggerFireEvent,
   };
 }
 
@@ -124,6 +148,9 @@ export function buildTestContainer(
     'pmg-presence-api',
   );
 
+  const broker = new SseBroker();
+  const pushPort = new LoggingPushService();
+
   const onsiteProjection = new OnsiteProjectionService(checkInEvents, visitors);
   const expectedPresence = new ExpectedPresenceService(
     calendar,
@@ -131,6 +158,15 @@ export function buildTestContainer(
     checkInEvents,
     visitors,
   );
+
+  const triggerFireEvent = new TriggerFireEventUseCase({
+    fireEvents,
+    rollCall,
+    onsiteProjection,
+    expectedPresence,
+    broker,
+    pushPort,
+  });
 
   return {
     employees,
@@ -146,7 +182,10 @@ export function buildTestContainer(
     jwtService,
     jtiStore,
     entraProvider,
+    broker,
+    pushPort,
     onsiteProjection,
     expectedPresence,
+    triggerFireEvent,
   };
 }

@@ -12,6 +12,8 @@ import { makeVisitsRouter } from './routes/visits.js';
 import { makeQrRouter } from './routes/qr.js';
 import { makeReturningVisitorRouter } from './routes/returning-visitor.js';
 import { makePatientsRouter } from './routes/patients.js';
+import { makeFireRouter } from './routes/fire.js';
+import { makeExpectedRouter } from './routes/expected.js';
 import { errorHandler } from './middleware/error-handler.js';
 import { healthRouter } from './routes/health.js';
 
@@ -53,6 +55,8 @@ export function createServer(container: Container): Express {
     auditLog: container.auditLog,
     jwtService: container.jwtService,
     jtiStore: container.jtiStore,
+    broker: container.broker,
+    onsiteProjection: container.onsiteProjection,
   }));
 
   // QR token issuance (any authed employee)
@@ -64,9 +68,33 @@ export function createServer(container: Container): Express {
   // Returning visitor lookup — public, rate-limited
   app.use('/api', makeReturningVisitorRouter(container.visitBookings, container.visitors));
 
-  // Protected onsite + visit history endpoints
-  app.use('/api', makeOnsiteRouter(container.onsiteProjection, requireAuth, requireAdminOrMarshal));
+  // Protected onsite, SSE stream, roll-call
+  app.use('/api', makeOnsiteRouter({
+    onsiteProjection: container.onsiteProjection,
+    fireEvents: container.fireEvents,
+    rollCall: container.rollCall,
+    broker: container.broker,
+    jwtService: container.jwtService,
+    requireAuth,
+    requireAdminOrMarshal,
+  }));
+
+  // Visit history
   app.use('/api', makeVisitsRouter(container.checkInEvents, requireAuth, requireAdmin));
+
+  // Expected presence (ops view + amber source)
+  app.use('/api', makeExpectedRouter(container.expectedPresence, requireAuth, requireAdminOrMarshal));
+
+  // Fire alarm routes
+  app.use('/api', makeFireRouter({
+    fireEvents: container.fireEvents,
+    triggerFireEvent: container.triggerFireEvent,
+    broker: container.broker,
+    jwtService: container.jwtService,
+    requireAuth,
+    requireAdmin,
+    requireAdminOrMarshal,
+  }));
 
   app.use(errorHandler);
 
