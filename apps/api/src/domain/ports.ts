@@ -1,4 +1,4 @@
-import type { ExpectationSource, PersonType, VisitCategory } from '@pmg/contracts';
+import type { ExpectationSource, PersonType, Role, VisitCategory } from '@pmg/contracts';
 import type { PatientMatch } from './entities.js';
 
 // ─── Calendar port (mock M365 / Microsoft Graph in production) ────────────────
@@ -35,4 +35,23 @@ export interface EmailPort {
     to: string,
     ctx: { displayName: string; timestamp: string },
   ): Promise<void>;
+}
+
+// ─── JWT service port ─────────────────────────────────────────────────────────
+
+export interface JwtClaims {
+  readonly sub: string;
+  readonly name: string;
+  readonly preferred_username: string | null;
+  readonly roles: readonly Role[];
+  readonly oid: string;
+  readonly iss: string;
+  readonly aud: string;
+  readonly iat: number;
+  readonly exp: number;
+}
+
+export interface JwtServicePort {
+  sign(payload: Omit<JwtClaims, 'iat' | 'exp'>): string;
+  verify(token: string): JwtClaims;
 }

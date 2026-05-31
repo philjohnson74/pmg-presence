@@ -4,11 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Current implementation status
 
-**Phase 1 — Domain + in-memory repositories + seed is complete on branch `phase/1-domain-repositories-seed`.**
+**Phase 2 — Auth: mock SSO + JWT + RBAC middleware is complete on branch `phase/2-auth-jwt-rbac`.**
 
-Next: **Phase 2 — Auth: mock SSO + JWT + RBAC middleware** (see [docs/08-implementation-plan.md](docs/08-implementation-plan.md)).
+Next: **Phase 3 — Check-in/out API + event log + debounce** (see [docs/08-implementation-plan.md](docs/08-implementation-plan.md)).
 
-Create a branch before starting: `git checkout -b phase/2-auth-jwt-rbac`
+Create a branch before starting: `git checkout -b phase/3-checkin-api`
 
 ## Commands
 
@@ -56,6 +56,30 @@ All scripts are orchestrated by **Turborepo** (`turbo.json`); run them from the 
 - **Seed data** (`apps/api/src/infrastructure/seed/`) — 11 employees (2 with no email), 9 patients, 5 visitors, 5 visit bookings (2 multi-day), 10 pre-seeded `in` events; 3 amber entries: Priya Shah + Dev Anand (M365) and Bram de Vries (multi-day booking)
 - **Composition root** (`apps/api/src/container.ts`) — `createContainer()` (seeded), `buildTestContainer()` (empty, injectable)
 - **Tests** — 48 passing; contract test suites on `EmployeeRepository`, `CheckInEventRepository`, `VisitBookingRepository`; service tests verify the full seeded amber set end-to-end; coverage thresholds enforced (≥80% lines/functions, ≥75% branches)
+
+## What Phase 2 delivered
+
+- **Config module** (`apps/api/src/config/index.ts`) — Zod-validated startup config; single source of truth for `JWT_SECRET`, `JWT_ISSUER`, `JWT_AUDIENCE`, `PORT`. Never read `process.env` outside this module.
+- **`JwtServicePort`** added to `domain/ports.ts` — `sign()` + `verify()` interface; claims mirror Entra ID (`sub`, `name`, `preferred_username`, `roles`, `oid`, `iss`, `aud`).
+- **`JwtService`** (`infrastructure/auth/jwt-service.ts`) — HS256 sign/verify via `jsonwebtoken`; ~8h session lifetime (by design for mock/demo — do not change without being asked).
+- **`MockEntraProvider`** (`infrastructure/auth/mock-entra-provider.ts`) — looks up a seeded employee by `userId`, issues an Entra-compatible JWT.
+- **`AppError` hierarchy** (`application/errors.ts`) — `AppError` → `ValidationError` (400), `NotFoundError` (404), `UnauthorisedError` (401), `ForbiddenError` (403), `ConflictError` (409).
+- **Error handler updated** — now handles `AppError` subclasses with typed `statusCode`/`detail`; falls back to 500 for anything else. RFC 7807 problem JSON throughout.
+- **`requireAuth` middleware** (`presentation/middleware/require-auth.ts`) — factory `makeRequireAuth(jwtService)`: extracts Bearer token, verifies it, attaches `req.user`. Returns 401 for missing/invalid/expired tokens.
+- **`requireRole` middleware** (`presentation/middleware/require-role.ts`) — factory `requireRole(...roles)`: 401 if no user, 403 if authed but under-privileged.
+- **Express type augmentation** (`presentation/types/express.d.ts`) — `req.user: { sub, name, email, roles }` globally available.
+- **Auth routes** (`presentation/routes/auth.ts`) — `POST /api/auth/login` (seeded-user picker, no password), `GET /api/auth/me` (protected).
+- **`container.ts` updated** — `JwtService` and `MockEntraProvider` wired; `buildTestContainer()` accepts optional `jwtSecret`.
+- **`server.ts` updated** — now accepts a `Container` parameter; `index.ts` creates the container and passes it in.
+- **`packages/auth-client`** — new package: `AuthProvider` interface (`login`, `getToken`, `getUser`, `logout`) + `MockAuthProvider` (calls `POST /api/auth/login`, holds token in memory).
+- **Tests** — 117 passing; 6 `requireAuth` unit tests, 4 `requireRole` unit tests, 8 `auth` integration tests; typecheck and lint clean.
+
+### Known decisions from Phase 2
+- **`makeRequireAuth(jwtService)`** is a factory (not a bare middleware) so the JWT service is injected — no module-level singleton, fully testable in isolation.
+- **`requireRole` is stateless** — it reads only from `req.user`, which is set by `requireAuth`. They must always be composed together on protected routes.
+- **Mock JWT lifetime is ~8h** by deliberate design for demo convenience (see doc 06). Do not change it unless asked.
+- **`buildTestContainer({ jwtSecret })`** accepts a custom secret so integration tests can sign their own tokens without touching the config module.
+- **`packages/auth-client`** is a frontend package only — it should never be imported by `apps/api`. The API owns the signing/verification side; the client owns the token storage and fetch side.
 
 ### Known decisions from Phase 1
 - **`seed()` methods on in-memory repos** bypass ID generation so seed data uses deterministic IDs (`emp-001`, `vis-001`, etc.) that test assertions can reference directly.
