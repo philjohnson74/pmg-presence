@@ -5,9 +5,7 @@ question with confidence at any moment:
 
 > **"Who is on site right now, and where are they?"**
 
-Built for the Stage 5 Lead Agentic Software Developer technical task. This repository
-currently contains the **specification and implementation plan only** — no application
-code has been written yet. Implementation begins once the spec is agreed.
+Built for the Stage 5 Lead Agentic Software Developer technical task.
 
 ## The problem (from the brief)
 
@@ -30,6 +28,73 @@ A working, end-to-end **presence + fire roll-call** system across three clients:
 The single most important deliverable is **trustworthy roll-call** — the fire marshal's
 phone must show who is physically present, even offline, the moment the alarm sounds.
 
+## Status
+
+| Phase | Description | Status |
+|-------|-------------|--------|
+| **Phase 0** | Monorepo skeleton & tooling | ✅ Complete |
+| **Phase 1** | Domain + in-memory repositories + seed | 🔲 Next |
+| **Phase 2** | Auth: mock SSO + JWT + RBAC middleware | 🔲 Pending |
+| **Phase 3** | Check-in/out API + SSE | 🔲 Pending |
+| **Phase 4** | Patient lookup + QR token | 🔲 Pending |
+| **Phase 5** | Fire alarm + roll-call | 🔲 Pending |
+| **Phase 6** | Admin portal | 🔲 Pending |
+| **Phase 7** | Reception kiosk | 🔲 Pending |
+| **Phase 8** | Employee / marshal PWA + offline | 🔲 Pending |
+
+See [docs/08-implementation-plan.md](docs/08-implementation-plan.md) for full phase detail.
+
+## Running the project
+
+> **Prerequisite:** pnpm is managed via Corepack. Run `corepack enable` once if `pnpm` is not
+> found, then all commands below work from the repo root.
+
+```bash
+pnpm install          # install all workspace dependencies
+pnpm dev              # start all four services concurrently
+```
+
+Services on fixed ports:
+
+| Service | URL |
+|---------|-----|
+| API + Swagger | http://localhost:4000 |
+| Admin Portal | http://localhost:5173 |
+| Reception Kiosk | http://localhost:5174 |
+| Marshal / Employee PWA | http://localhost:5175 |
+
+Stop all services: **Ctrl + C** in the terminal.
+
+## Running tests
+
+```bash
+pnpm test                          # run all unit + integration tests (Vitest, all packages)
+pnpm lint                          # ESLint across the monorepo
+pnpm typecheck                     # tsc across the monorepo
+
+# Single package
+pnpm --filter @pmg/api test
+
+# Single test file
+pnpm --filter @pmg/api test -- src/presentation/routes/health.test.ts
+
+# E2E (requires stack running)
+pnpm test:e2e
+```
+
+## Tech stack
+
+- **Frontend:** React + TypeScript + Vite, Tailwind CSS, shadcn/ui, PWA (Capacitor-ready)
+- **Backend:** Node.js + Express + TypeScript, single HTTP API
+- **Data:** In-memory repositories behind interfaces (PostgreSQL swap path documented)
+- **Auth:** Mock M365/Entra ID SSO issuing local JWTs; real MSAL drops in behind the same interface
+- **Real-time:** Server-Sent Events (SSE)
+- **Offline:** Workbox Service Worker + IndexedDB
+- **Testing:** Vitest (unit/integration), Playwright (E2E)
+- **CI/CD:** GitHub Actions + SonarCloud, branch protection on `main`
+- **Observability:** OpenTelemetry (traces + metrics)
+- **API docs:** OpenAPI / Swagger
+
 ## Document index
 
 | Doc | Covers |
@@ -46,27 +111,3 @@ phone must show who is physically present, even offline, the moment the alarm so
 | [docs/10-seed-data.md](docs/10-seed-data.md) | Demo-ready seed: employees, patients, visitors, amber/on-site sets |
 | [docs/11-ai-session-transcript.md](docs/11-ai-session-transcript.md) | Curated agent-steering sample (Stage 5 transcript deliverable) |
 | [docs/12-initial-prompt.md](docs/12-initial-prompt.md) | The full verbatim opening prompt that started the spec |
-
-## Tech stack (summary)
-
-- **Frontend:** React + TypeScript + Vite, Tailwind CSS, shadcn/ui, PWA (Capacitor-ready)
-- **Backend:** Node.js + Express + TypeScript, single HTTP API
-- **Data:** In-memory repositories behind interfaces (PostgreSQL swap path documented)
-- **Auth:** Mock M365/Entra ID SSO issuing local JWTs; real MSAL drops in behind the same interface
-- **Real-time:** Server-Sent Events (SSE)
-- **Offline:** Workbox Service Worker + IndexedDB
-- **Testing:** Vitest (unit/integration), Playwright (E2E)
-- **CI/CD:** GitHub Actions + SonarCloud, branch protection on `main`
-- **Observability:** OpenTelemetry (traces + metrics)
-- **API docs:** OpenAPI / Swagger
-
-## Run (target, once implemented)
-
-```bash
-pnpm install
-pnpm dev        # runs API + all three frontends concurrently from the repo root
-```
-
-## Status
-
-📋 **Spec phase.** This README and the `docs/` folder define the system. No app code yet.
