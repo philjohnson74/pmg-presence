@@ -4,11 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Current implementation status
 
-**Phase 3 — Check-in/out API + event log + debounce is complete on branch `phase/3-checkin-api` (PR open, not yet merged to `main`).**
+**Phase 5 — Patient lookup is complete on branch `phase/5-patient-lookup`.**
 
-Next: **Phase 4 — QR issuance + validation** (see [docs/08-implementation-plan.md](docs/08-implementation-plan.md)).
+Next: **Phase 6 — Fire trigger + roll-call API + SSE** (see [docs/08-implementation-plan.md](docs/08-implementation-plan.md)).
 
-Create a branch before starting: `git checkout -b phase/4-qr-issuance`
+Create a branch before starting: `git checkout -b phase/6-fire-rollcall-sse`
 
 ## Commands
 
@@ -96,6 +96,20 @@ All scripts are orchestrated by **Turborepo** (`turbo.json`); run them from the 
 - **Login rate limiter moved inside `createServer`** — was module-level (shared across all test app instances, causing 429s in the test suite); now instantiated per server so each test gets a fresh counter
 - **Tests** — 147 passing (30 new integration tests covering all 5 check-in methods, debounce, multi-day booking + pass issuance, RBAC 401/403 on every protected route, history filtering)
 - **SonarCloud** — all 14 findings from the Phase 3 scan resolved across subsequent commits (redundant casts, wrong Error subclass, async idioms, duplicate imports, mock setup patterns, negated conditions, `Readonly<>` on React props, heading accessibility)
+
+## What Phase 5 delivered
+
+- **`GET /api/patients/lookup`** (`presentation/routes/patients.ts`) — public (kiosk) route accepting `?name=&dob=` query params; rate-limited (5 req / 30s per IP, fresh limiter per server instance); zod-validated (name 1–200 chars, dob YYYY-MM-DD and not in the future).
+- **Data minimisation** — response returns only `{ match, patientId, displayName, patientReference }`; DOB and `clinicalSystemId` are never exposed. The `MockClinicalSystem` (already built in Phase 1) performs the diacritic-tolerant, case-insensitive, whitespace-collapsing matching.
+- **`makePatientsRouter(clinicalSystem)`** wired in `server.ts` alongside the returning-visitor router (both public, rate-limited).
+- **Tests** — 12 new integration tests: match, case-insensitivity, diacritic normalisation, whitespace tolerance, miss (unknown patient), miss (wrong DOB), data-minimisation assertions, 4 validation error cases (missing name, missing dob, invalid format, future date), rate-limit enforcement (429 on request 6).
+- **Total tests** — 172 passing.
+
+### Known decisions from Phase 5
+
+- **Rate limiter is per-`makePatientsRouter` call** (same pattern as the returning-visitor router) — prevents rate limit state leaking between test app instances.
+- **Future DOB rejected at the route layer** — `dob <= today` check in the zod schema; no need for domain logic since this is purely an input sanity guard.
+- **No auth required** — patient lookup is public (kiosk surface). The rate limiter is the only abuse guard at this layer; the `MockClinicalSystem` never exposes DOB or clinical IDs downstream.
 
 ### Known decisions from Phase 3
 
