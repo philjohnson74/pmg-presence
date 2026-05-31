@@ -72,6 +72,19 @@ function describeVisitBookingRepository(factory: () => VisitBookingRepository) {
     });
   });
 
+  describe('findActiveByCode', () => {
+    it('finds an active booking by its pass code', async () => {
+      await repo.create({ ...base, startDate: '2026-05-31', endDate: '2026-06-10', passToken: 'tok', passCode: 'BRAM7R' });
+      const found = await repo.findActiveByCode('de Vries', 'BRAM7R');
+      expect(found).not.toBeNull();
+      expect(found?.passCode).toBe('BRAM7R');
+    });
+
+    it('returns null for an unrecognised pass code', async () => {
+      expect(await repo.findActiveByCode('Anyone', 'BADCODE')).toBeNull();
+    });
+  });
+
   describe('complete', () => {
     it('sets status to completed', async () => {
       const b = await repo.create({ ...base, startDate: '2026-05-31', endDate: '2026-05-31' });
