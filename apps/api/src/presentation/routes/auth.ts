@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import type { AuthUser } from '@pmg/contracts';
 import type { MockEntraProvider } from '../../infrastructure/auth/mock-entra-provider.js';
+import type { EmployeeRepository } from '../../domain/repositories.js';
 import type { RequestHandler } from 'express';
 import { NotFoundError, UnauthorisedError, ValidationError } from '../../application/errors.js';
 
@@ -11,6 +12,7 @@ export function makeAuthRouter(
   entraProvider: MockEntraProvider,
   requireAuth: RequestHandler,
   loginRateLimiter?: RequestHandler,
+  employees?: EmployeeRepository,
 ): Router {
   const router = Router();
 
@@ -45,6 +47,25 @@ export function makeAuthRouter(
     };
     res.status(200).json(user);
   });
+
+  // GET /api/auth/users — mock login picker: returns seeded active employees
+  if (employees) {
+    router.get('/auth/users', (_req, res, next) => {
+      employees
+        .listActive()
+        .then((list) =>
+          res.json({
+            users: list.map((e) => ({
+              id: e.id,
+              name: e.name,
+              email: e.email,
+              role: e.role,
+            })),
+          }),
+        )
+        .catch((err: unknown) => next(err));
+    });
+  }
 
   return router;
 }

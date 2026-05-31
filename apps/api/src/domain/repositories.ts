@@ -21,6 +21,7 @@ export interface EmployeeRepository {
   findByEmail(email: string): Promise<Employee | null>;      // case-insensitive
   findByEmployeeNumber(n: string): Promise<Employee | null>;
   listActive(): Promise<Employee[]>;
+  listAll(): Promise<Employee[]>;
   create(e: NewEmployee): Promise<Employee>;
   update(
     id: string,

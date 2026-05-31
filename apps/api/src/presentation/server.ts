@@ -14,6 +14,7 @@ import { makeReturningVisitorRouter } from './routes/returning-visitor.js';
 import { makePatientsRouter } from './routes/patients.js';
 import { makeFireRouter } from './routes/fire.js';
 import { makeExpectedRouter } from './routes/expected.js';
+import { makeEmployeesRouter } from './routes/employees.js';
 import { errorHandler } from './middleware/error-handler.js';
 import { healthRouter } from './routes/health.js';
 
@@ -43,7 +44,10 @@ export function createServer(container: Container): Express {
   const requireAdmin = requireRole('admin');
 
   app.use('/api', healthRouter);
-  app.use('/api', makeAuthRouter(container.entraProvider, requireAuth, loginRateLimit));
+  app.use('/api', makeAuthRouter(container.entraProvider, requireAuth, loginRateLimit, container.employees));
+
+  // Employee CRUD — admin only
+  app.use('/api', makeEmployeesRouter(container.employees, requireAuth, requireAdmin));
 
   // Public check-in/out endpoints (kiosk & employee app)
   app.use('/api', makeCheckInRouter({
