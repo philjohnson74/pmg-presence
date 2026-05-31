@@ -10,8 +10,11 @@ export default defineConfig({
       reporter: ['text', 'lcov'],
       include: ['src/**'],
       exclude: ['src/index.ts'],
-      // Thresholds reintroduced in Phase 1 once real domain code exists.
-      // Target: lines 80, functions 80, branches 75.
+      thresholds: {
+        lines: 80,
+        functions: 80,
+        branches: 75,
+      },
     },
   },
 });

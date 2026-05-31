@@ -4,11 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Current implementation status
 
-**Phase 0 — Monorepo skeleton & tooling is complete and merged to `main`.**
+**Phase 1 — Domain + in-memory repositories + seed is complete on branch `phase/1-domain-repositories-seed`.**
 
-Next: **Phase 1 — Domain + in-memory repositories + seed** (see [docs/08-implementation-plan.md](docs/08-implementation-plan.md)).
+Next: **Phase 2 — Auth: mock SSO + JWT + RBAC middleware** (see [docs/08-implementation-plan.md](docs/08-implementation-plan.md)).
 
-Create a branch before starting: `git checkout -b phase/1-domain-repositories-seed`
+Create a branch before starting: `git checkout -b phase/2-auth-jwt-rbac`
 
 ## Commands
 
@@ -23,7 +23,7 @@ pnpm typecheck        # tsc across the monorepo
 pnpm --filter @pmg/api seed   # reset in-memory data to demo seed (dev convenience)
 
 # Run a single vitest test file
-pnpm --filter @pmg/api test -- src/domain/use-cases/check-in.test.ts
+pnpm --filter @pmg/api test -- src/application/services/onsite-projection-service.test.ts
 
 # Run a single playwright test
 playwright test e2e/fire-alarm.spec.ts
@@ -47,6 +47,21 @@ All scripts are orchestrated by **Turborepo** (`turbo.json`); run them from the 
 - GitHub Actions CI: Install → Lint → Typecheck → Unit tests + coverage → SonarCloud → Build
 - SonarCloud wired up (project: `philjohnson74_pmg-presence`, org: `philjohnson74`)
 - Branch protection on `main`; all merges via PR with CI green
+
+## What Phase 1 delivered
+
+- **Domain layer** (`apps/api/src/domain/`) — all entity types (`Employee`, `Visitor`, `VisitBooking`, `CheckInEvent`, `FireEvent`, `RollCallEntry`, `AuditLog`, `Location`, `Patient`, `PatientMatch`) with `New*` input counterparts; 8 repository interfaces; external port interfaces (`CalendarPort`, `ClinicalSystemPort`, `PushPort`, `EmailPort`)
+- **Application services** (`apps/api/src/application/services/`) — `OnsiteProjectionService` (derives live snapshot from event log, enriches visitors, builds counts + `visitorsByCategory`); `ExpectedPresenceService` (unions M365 calendar + active `VisitBooking`s, computes `checkedInToday`)
+- **Infrastructure** (`apps/api/src/infrastructure/`) — 8 in-memory repository implementations each with a `seed()` bypass; `MockM365Calendar` (configurable per-date entries); `MockClinicalSystem` (diacritic-tolerant name + exact DOB matching)
+- **Seed data** (`apps/api/src/infrastructure/seed/`) — 11 employees (2 with no email), 9 patients, 5 visitors, 5 visit bookings (2 multi-day), 10 pre-seeded `in` events; 3 amber entries: Priya Shah + Dev Anand (M365) and Bram de Vries (multi-day booking)
+- **Composition root** (`apps/api/src/container.ts`) — `createContainer()` (seeded), `buildTestContainer()` (empty, injectable)
+- **Tests** — 48 passing; contract test suites on `EmployeeRepository`, `CheckInEventRepository`, `VisitBookingRepository`; service tests verify the full seeded amber set end-to-end; coverage thresholds enforced (≥80% lines/functions, ≥75% branches)
+
+### Known decisions from Phase 1
+- **`seed()` methods on in-memory repos** bypass ID generation so seed data uses deterministic IDs (`emp-001`, `vis-001`, etc.) that test assertions can reference directly.
+- **`SEED_DATE = '2026-05-31'`** exported from `seed-data.ts` — pass this to `expectedOn()` in tests to get deterministic amber results.
+- **`buildTestContainer()`** creates empty repos with no seed; pass `calendarEntries` / `patients` arrays to configure the mock adapters for isolated tests.
+- **`OnsiteProjectionService`** depends on both `CheckInEventRepository` and `VisitorRepository` to enrich visitor occupants with `host` and `visitCategory` — visitor data is not stored on `CheckInEvent` (denormalised `displayName` only).
 
 ### Known tooling decisions from Phase 0
 - **tsconfig `extends`** use **relative paths** (e.g. `../../packages/config/tsconfig.react.json`),

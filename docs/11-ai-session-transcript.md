@@ -160,6 +160,64 @@ explained the model** — and the question spotted a second smell: `kiosk-form` 
 
 ---
 
+## Example 3 — Enforcing coverage as a quality gate, not a metric to game
+
+> **In one line:** CI rejected the Phase 1 merge because function coverage was 75% against an 80%
+> threshold; I showed the agent the failure and added a hard constraint — *"tests that add value"*
+> — which prevented it from padding coverage and instead forced it to find and fill genuine gaps in
+> the test suite.
+
+### 3a — Presenting the CI failure and setting the constraint
+
+> **PROMPT (verbatim, accompanied by a screenshot of the failing CI job):**
+>
+> "Unit tests are only at 75% coverage and need to be at 80% coverage to merge to main. Can you add
+> additional tests to increase coverage to at least 80%? **They need to be tests that add value.**"
+
+🎯 **CONTEXT SET.** Two constraints landed simultaneously. First, the objective bar: 80% is
+enforced by the CI threshold and branch protection on `main` — not negotiable. Second, and more
+important, "*they need to be tests that add value*" — a direct block on the obvious shortcut of
+writing empty assertions or trivially repeating what the existing tests already verify just to
+move the counter. That second constraint determined what the agent was allowed to produce.
+
+> **RESPONSE (condensed).** Before writing anything, ran `vitest run --coverage` locally to get
+> the per-file breakdown. Identified the actual gaps: five in-memory repositories (fire-event,
+> roll-call, visitor, location, audit-log) with no test files at all; `MockClinicalSystem.lookup()`
+> never called directly; `errorHandler` middleware at 0% functions; `buildTestContainer()` in
+> `container.ts` uncovered; and `findActiveByCode` in the visit-booking repo untouched. Then wrote
+> nine test files and one extension to an existing file, each adding real invariant coverage —
+> not line-count coverage.
+
+🔁 **OUTPUT SELF-CONSTRAINED BY PROMPT.** The "add value" clause ruled out the obvious shortcut.
+Each file had to earn its place:
+- `in-memory-fire-event-repository.test.ts` — verified the "only one active fire event" invariant:
+  `active()` returns null after resolve, not a stale reference.
+- `in-memory-roll-call-repository.test.ts` — verified fire-event scoping (entries for `fire-002`
+  don't bleed into a `fire-001` query) and the amber → accounted state transition.
+- `mock-clinical-system.test.ts` — verified diacritic-tolerant name matching (`renee` matches
+  `Renée`), case-insensitivity, wrong-DOB rejection even when name matches, and a data-minimisation
+  assertion: the response must not include `dateOfBirth` or `clinicalSystemId`.
+- `error-handler.test.ts` — verified the RFC 7807 problem-JSON shape (`type`, `title`, `status`,
+  `instance`) for both plain errors and errors carrying an explicit status code.
+- `container.test.ts` — verified that `buildTestContainer()` returns fully isolated instances
+  (adding an employee in container A does not appear in container B), and that the injectable
+  `calendarEntries` and `patients` overrides work correctly.
+
+> **OUTCOME.** Nine files, 47 new tests, 95 total. Function coverage: 70.31% → **95.83%**. Line
+> coverage: 74.12% → **86.04%**. Branch coverage: 97.72% → **98.3%**. All three thresholds
+> (80% lines, 80% functions, 75% branches) cleared by a margin that provides real headroom —
+> not a squeaker pass. CI green; branch unblocked for PR.
+
+> **Why this one matters.** The steering pattern is different from Examples 1–2. Those were about
+> *design* — overriding or redirecting abstractions. This one is about *quality enforcement* through
+> tooling: the CI threshold was already set, branch protection was already on, and all I had to do
+> was hold the constraint ("add value") rather than accept the quick fix. The agent knew the
+> shortcut (trivial assertions on already-covered code paths) and didn't take it because the prompt
+> made it explicitly off-limits. The resulting tests found a real data-minimisation assertion that
+> no previous test had made — the clinical system lookup must not return `dateOfBirth`.
+
+---
+
 ## What these examples demonstrate
 
 | Steering behaviour | Where |
@@ -172,6 +230,8 @@ explained the model** — and the question spotted a second smell: `kiosk-form` 
 | Probing "where is this used?" to force code-tracing — which surfaced a missing use case | 2a (🎯) |
 | Withholding acceptance ("explain before you change it") — which caught a modelling smell | 2b (🔁) |
 | Choosing the clean refactor over the quick bolt-on | 2b (🎯) |
+| Using CI as an objective quality gate — threshold not met = branch blocked, no exceptions | 3a (🎯) |
+| Adding "tests that add value" to block coverage padding and force genuine gap analysis | 3a (🎯) |
 
 The throughline: the agent did the breadth, drafting, and (when probed) the gap-spotting; I owned
 the **judgement** — where the box goes, which abstractions are honest, and when "just do it" should
