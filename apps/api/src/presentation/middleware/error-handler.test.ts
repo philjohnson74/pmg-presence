@@ -10,11 +10,10 @@ import {
 } from '../../application/errors.js';
 
 function makeRes() {
-  const res = {
-    status: vi.fn(),
-    json: vi.fn(),
-  } as unknown as Response;
-  (res.status as ReturnType<typeof vi.fn>).mockReturnValue(res);
+  const json = vi.fn();
+  const status = vi.fn();
+  const res = { status, json } as unknown as Response;
+  status.mockReturnValue(res);
   return res;
 }
 
@@ -102,7 +101,7 @@ describe('errorHandler middleware', () => {
     const res = makeRes();
     errorHandler(new NotFoundError('oops'), makeReq(), res, next);
 
-    const body = (res.json as ReturnType<typeof vi.fn>).mock.calls[0]?.[0] as Record<string, unknown>;
+    const body = vi.mocked(res.json).mock.calls[0]?.[0] as Record<string, unknown>;
     expect(body).toHaveProperty('type', 'about:blank');
     expect(body).toHaveProperty('title');
     expect(body).toHaveProperty('status');
