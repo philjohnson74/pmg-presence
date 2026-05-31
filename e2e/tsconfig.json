@@ -1,13 +1,12 @@
 {
-  "extends": "../tsconfig.base.json",
   "compilerOptions": {
+    "target": "ES2022",
     "module": "CommonJS",
-    "moduleResolution": "Node",
-    "outDir": "../dist/e2e",
-    "composite": false,
-    "incremental": false,
-    "noUncheckedIndexedAccess": false,
-    "types": ["node", "@playwright/test"]
+    "moduleResolution": "bundler",
+    "strict": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "noUncheckedIndexedAccess": false
   },
   "include": ["./**/*.ts"]
 }
