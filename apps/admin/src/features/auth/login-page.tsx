@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { PeacocksLogo } from '@pmg/ui';
 import { fetchPickerUsers, type PickerUser } from '../../lib/api.js';
 import { useSession } from './use-session.js';
 
@@ -47,7 +48,7 @@ export function LoginPage() {
   return (
     <div className="min-h-screen bg-white flex flex-col">
       <header className="bg-pmg-navy text-white px-8 py-5 flex items-center gap-4">
-        <span className="font-semibold text-xl tracking-tight">PMG Presence</span>
+        <PeacocksLogo className="h-9 w-auto" />
         <span className="text-pmg-orange font-semibold text-sm uppercase tracking-widest">
           Admin
         </span>

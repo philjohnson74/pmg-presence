@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter, Navigate, NavLink, Outlet, Route, Routes } from 'react-router-dom';
+import { PeacocksLogo } from '@pmg/ui';
 import { SessionProvider, useSession } from './features/auth/use-session.js';
 import { LoginPage } from './features/auth/login-page.js';
 import { MyPassPage } from './features/my-pass/my-pass-page.js';
@@ -40,7 +41,7 @@ function AppShell() {
 
       {/* Top bar */}
       <header className="bg-pmg-navy text-white px-6 py-3 flex items-center gap-3 z-10 shadow">
-        <span className="font-semibold text-lg tracking-tight">PMG Presence</span>
+        <PeacocksLogo className="h-8 w-auto" />
         <span className="text-pmg-cyan font-semibold text-xs uppercase tracking-widest">
           {isMarshal ? 'Marshal' : 'Employee'}
         </span>

@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter, Navigate, NavLink, Outlet, Route, Routes } from 'react-router-dom';
+import { PeacocksLogo } from '@pmg/ui';
 import { SessionProvider, useSession } from './features/auth/use-session.js';
 import { LoginPage } from './features/auth/login-page.js';
 import { OnsitePage } from './features/onsite/onsite-page.js';
@@ -26,7 +27,7 @@ function AppShell() {
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Top header */}
       <header className="bg-pmg-navy text-white px-6 py-3 flex items-center gap-4 z-10 shadow">
-        <span className="font-semibold text-lg tracking-tight">PMG Presence</span>
+        <PeacocksLogo className="h-8 w-auto" />
         <span className="text-pmg-orange font-semibold text-xs uppercase tracking-widest">
           Admin
         </span>
