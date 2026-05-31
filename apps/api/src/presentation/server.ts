@@ -1,7 +1,6 @@
 import cors from 'cors';
 import express, { type Express } from 'express';
 import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
 import type { Container } from '../container.js';
 import { makeRequireAuth } from './middleware/require-auth.js';
 import { requireRole } from './middleware/require-role.js';
@@ -29,14 +28,6 @@ const ALLOWED_ORIGINS = [
 export function createServer(container: Container): Express {
   const app = express();
 
-  // Fresh rate limiter per server instance so tests don't share state
-  const loginRateLimit = rateLimit({
-    windowMs: 60 * 1000,
-    max: 20,
-    standardHeaders: true,
-    legacyHeaders: false,
-  });
-
   // Wire SSE broker into metrics so the gauge is populated at scrape time
   registerSseBroker(() => container.broker.connectionCount);
 
@@ -57,7 +48,8 @@ export function createServer(container: Container): Express {
   const requireAdmin = requireRole('admin');
 
   app.use('/api', healthRouter);
-  app.use('/api', makeAuthRouter(container.entraProvider, requireAuth, loginRateLimit, container.employees));
+  // Mock SSO has no passwords — no login rate limit needed
+  app.use('/api', makeAuthRouter(container.entraProvider, requireAuth, undefined, container.employees));
 
   // Employee CRUD — admin only
   app.use('/api', makeEmployeesRouter(container.employees, requireAuth, requireAdmin));
