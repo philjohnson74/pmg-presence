@@ -136,7 +136,7 @@ shell (so a network blip doesn't blank the kiosk) but the kiosk is **online-firs
 it does not queue check-ins offline in the MVP (documented assumption; offline write queue is a
 roadmap item).
 
-## 5.4 Employee / Marshal PWA (`apps/marshal`) — authenticated, offline-capable
+## 5.4 Employee / Marshal PWA (`apps/employee`) — authenticated, offline-capable
 
 **Audience:** all staff (employee role) + fire marshals (marshal role). **Auth:** mock SSO → JWT.
 
@@ -163,7 +163,7 @@ roadmap item).
 
 Component structure:
 ```
-apps/marshal/src/
+apps/employee/src/
 ├── features/
 │   ├── auth/
 │   ├── my-pass/     (RotatingQr, useQrToken, SelfCheckInButtons)
@@ -174,7 +174,7 @@ apps/marshal/src/
 └── pwa/ (manifest, install)
 ```
 
-## 5.5 Service Worker + IndexedDB cache strategy (marshal offline)
+## 5.5 Service Worker + IndexedDB cache strategy (employee app offline)
 
 The marshal roll-call **must survive a flaky/dead network** during a real evacuation. Strategy
 uses **Workbox** for the service worker and **IndexedDB** for the data snapshot.
@@ -203,7 +203,7 @@ iOS Safari/PWA does **not** support Periodic Background Sync and aggressively re
 workers, so reliable background refresh on iPhones is not guaranteed. **Production solution:** the
 **Capacitor** wrapper (already in the planned stack) gives a native shell with real background
 capabilities and reliable storage on iOS. The MVP ships the PWA path and documents Capacitor as
-the iOS production answer (roadmap, doc 09). In the MVP demo, the marshal app is shown working
+the iOS production answer (roadmap, doc 09). In the MVP demo, the employee app is shown working
 offline by toggling the network in dev tools and re-opening — rendering from IndexedDB with a
 clear freshness stamp.
 

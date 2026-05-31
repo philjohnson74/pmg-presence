@@ -80,7 +80,7 @@ So the on-site list and roll-call aren't empty on first load:
 | Greg Hall | visitor (supplier) | 09:10 | Main Reception |
 | Joan Webb | patient | 09:00 | Main Reception |
 
-→ a live mix of **employee + visitor (4 categories) + patient** on the marshal view from the start.
+→ a live mix of **employee + visitor (4 categories) + patient** on the roll-call view from the start.
 
 ## 10.5 Expected on site but not checked in (amber) — 3
 

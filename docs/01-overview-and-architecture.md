@@ -102,7 +102,7 @@ pmg-presence/
 │   │
 │   ├── admin/                         # Admin Portal — React SPA (authenticated)
 │   ├── kiosk/                         # Reception Kiosk — React PWA (public)
-│   └── marshal/                       # Employee/Marshal — React PWA (authenticated, offline-capable)
+│   └── employee/                      # Employee / Mashal PWA — React PWA (authenticated, offline-capable)
 │       └── (each app: src/, public/manifest.webmanifest, vite.config.ts, package.json)
 │
 ├── packages/

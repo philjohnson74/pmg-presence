@@ -21,7 +21,7 @@ import { healthRouter } from './routes/health.js';
 const ALLOWED_ORIGINS = [
   'http://localhost:5173', // admin
   'http://localhost:5174', // kiosk
-  'http://localhost:5175', // marshal
+  'http://localhost:5175', // employee / marshal
 ];
 
 export function createServer(container: Container): Express {

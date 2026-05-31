@@ -96,7 +96,7 @@ The brief scores "assumptions you should have flagged but didn't" — so, explic
 
 | Item | Why | Where the seam already is |
 |------|-----|---------------------------|
-| **Capacitor wrapper (iOS)** | Reliable background sync/storage for the marshal app on iPhones (PWA can't) | PWA built; Capacitor wraps the same web app — planned stack |
+| **Capacitor wrapper (iOS)** | Reliable background sync/storage for marshals on the employee app on iPhones (PWA can't) | PWA built; Capacitor wraps the same web app — planned stack |
 | **Web Push notifications** | Push the alarm to marshals not actively in the app | `PushPort` interface built (Phase 1) → swap `LoggingPushService` to a Web Push adapter |
 | **M365 Graph integration** | Real "expected on site" (amber) + host notifications + real SSO | `CalendarPort` + `MockM365Calendar` built (Phase 1); `AuthProvider`/`MockAuthProvider` interface shipped (Phase 2) — swap `MockAuthProvider` for `MsalAuthProvider` + point `JwtService.verify` at Entra JWKS |
 | **PostgreSQL persistence** | Durable storage, multi-instance, reporting | All 8 repo interfaces built + contract test suites + `container.ts` composition root (Phase 1); swap implementations there |

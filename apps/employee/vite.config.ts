@@ -8,8 +8,8 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       manifest: {
-        name: 'PMG Presence — Staff',
-        short_name: 'PMG Staff',
+        name: 'PMG Presence — Employee',
+        short_name: 'PMG Employee',
         description: 'Peacocks Medical Group employee check-in and fire marshal roll-call',
         start_url: '/',
         display: 'standalone',

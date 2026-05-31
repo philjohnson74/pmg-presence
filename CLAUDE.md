@@ -4,17 +4,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Current implementation status
 
-**Phase 7 — Admin Portal UI is complete on branch `phase/7-admin-portal-ui`.**
+**Phase 9 — Employee PWA UI is complete on branch `phase/9-employee-pwa-ui`.**
 
-Next: **Phase 8 — Reception Kiosk UI** (see [docs/08-implementation-plan.md](docs/08-implementation-plan.md)).
+Phase 8 (Reception Kiosk UI) was skipped and remains pending.
 
-Create a branch before starting: `git checkout -b phase/8-reception-kiosk-ui`
+Next: **Phase 10 — Offline (Service Worker + IndexedDB)** (see [docs/08-implementation-plan.md](docs/08-implementation-plan.md)).
+
+Create a branch before starting: `git checkout -b phase/10-offline-sw-indexeddb`
 
 ## Commands
 
 ```bash
 pnpm install          # install all workspace dependencies
-pnpm dev              # start API (:4000) + admin (:5173) + kiosk (:5174) + marshal (:5175) concurrently
+pnpm dev              # start API (:4000) + admin (:5173) + kiosk (:5174) + employee (:5175) concurrently
 pnpm build            # build all apps and packages
 pnpm test             # vitest unit + integration across all packages and apps
 pnpm test:e2e         # playwright E2E tests (requires the stack to be running)
@@ -43,7 +45,7 @@ All scripts are orchestrated by **Turborepo** (`turbo.json`); run them from the 
 - `packages/contracts` — shared TypeScript types for API, SSE events, enums (spine of the repo)
 - `packages/ui` — PMG brand Tailwind preset + shadcn Button/Badge/Card primitives
 - `apps/api` — Express server, `/api/health` route, Vitest with coverage, error handler
-- `apps/admin`, `apps/kiosk`, `apps/marshal` — Vite + React + Tailwind shells on fixed ports
+- `apps/admin`, `apps/kiosk`, `apps/employee` — Vite + React + Tailwind shells on fixed ports
 - GitHub Actions CI: Install → Lint → Typecheck → Unit tests + coverage → SonarCloud → Build
 - SonarCloud wired up (project: `philjohnson74_pmg-presence`, org: `philjohnson74`)
 - Branch protection on `main`; all merges via PR with CI green
@@ -258,8 +260,8 @@ mirror Entra ID app-role conventions (`roles: string[]` array).
 SSE is the only real-time channel (`GET /api/onsite/stream`). The `EventSource` API cannot set
 headers, so the JWT is passed as `?access_token=` on the stream URL and validated on connection.
 
-The marshal PWA caches the on-site snapshot + roll-call to IndexedDB via Workbox and renders from
-cache immediately on open. The freshness timestamp shown in the UI is driven by SSE heartbeats.
+The employee PWA caches the on-site snapshot + roll-call to IndexedDB via Workbox and renders from
+cache immediately on open for marshals. The freshness timestamp shown in the UI is driven by SSE heartbeats.
 
 ## Key spec documents
 

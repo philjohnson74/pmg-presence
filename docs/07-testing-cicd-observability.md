@@ -45,13 +45,13 @@ event types each exercised once.
 
 ### E2E tests (small, critical only) — Playwright
 Run against the full stack (API + the relevant frontend) started in CI. Five journeys:
-1. **Employee QR check-in** — marshal app shows QR → kiosk scan flow → on-site count increments.
+1. **Employee QR check-in** — employee app shows QR → kiosk scan flow → on-site count increments.
    (QR scan in CI is driven by injecting the token to the check-in endpoint / a test hook, since
    real camera capture isn't available headless — documented test seam.)
 2. **Patient name/DOB check-in** — kiosk patient flow → match → checked in; plus a no-match →
    manual fallback.
 3. **Visitor sign-in** — kiosk visitor form → appears on admin on-site list.
-4. **Fire alarm trigger** — kiosk confirm-trigger → marshal app flips to evacuation mode with
+4. **Fire alarm trigger** — kiosk confirm-trigger → employee app flips to evacuation mode for marshals with
    correct red/amber/green tiles.
 5. **Marshal roll-call** — mark a person accounted-for → tile turns green → reflected for a
    second connected marshal (SSE).

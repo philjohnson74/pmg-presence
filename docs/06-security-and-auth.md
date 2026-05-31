@@ -2,7 +2,7 @@
 
 ## 6.1 Auth model overview
 
-Two authenticated clients (Admin Portal, Marshal/Employee PWA) and one public client
+Two authenticated clients (Admin Portal, Employee / Marshal PWA) and one public client
 (Reception Kiosk). Production intent is **M365 / Entra ID SSO via MSAL**; the MVP ships a
 **mock SSO** that is interface-compatible so the real implementation drops in without touching
 application logic.

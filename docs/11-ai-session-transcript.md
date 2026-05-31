@@ -294,6 +294,75 @@ improved both tooling visibility and code readability, not just the SonarCloud s
 
 ---
 
+## Example 5 — Correcting a naming mistake before it was baked in (marshal → employee)
+
+> **In one line:** I cancelled an implementation mid-start to fix a naming error I'd spotted —
+> the app was called "marshal" but serves *all* employees, with marshals being a privileged subset;
+> naming it after the subset rather than the primary audience was wrong, and fixing it before
+> writing code was cheaper than refactoring it later.
+
+### 5a — Cancelling the in-progress task
+
+The agent had already created the branch `phase/9-marshal-pwa-ui` and was about to begin writing
+code for Phase 9 when I interrupted:
+
+> **PROMPT (verbatim):**
+>
+> "Can you cancel the current processing?"
+
+🔁 **OUTPUT OVERRIDDEN — pre-emptively.** The agent stopped without writing any source files. The
+only change that existed at that point was the empty branch creation — no code to undo.
+
+### 5b — Setting the naming constraint and its reasoning
+
+> **PROMPT (verbatim):**
+>
+> "I'd like to change the name of this pwa to be 'employee' rather than 'marshal' before we
+> implement it, so the marshal folder under apps needs to be renamed to employee and where we talk
+> about the marshal app in the docs, md files etc we should change that to be the employee app.
+>
+> For clarity we still need the marshal functionality discussed but that will only be available to
+> a subset of users in that role when using this app. All app users will be employees, but only
+> some will be flagged as marshals, hence it makes sense calling the app the employee pwa/app
+> rather than marshal pwa/app."
+
+🎯 **CONTEXT SET.** The redirect came with an explicit architectural argument, not just a naming
+preference: the *primary audience* of the app is every employee; the marshal *role* is a privilege
+level within that audience. Naming the app after a sub-role obscures who it's for and misleads
+anyone reading the repo structure — `apps/marshal/` implies only marshals use it. The reasoning
+also pre-empted the natural follow-up question ("do we also rename the marshal role in auth?") by
+clarifying that the RBAC role string `'marshal'` should stay untouched; only the *app-level* name
+changes.
+
+> **RESPONSE (condensed).** Before touching any file, the agent searched the repo to distinguish
+> (a) app/package references safe to rename (`apps/marshal`, `@pmg/marshal`, the PWA manifest name,
+> CORS comment, UI headings) from (b) the `marshal` role string in auth middleware, seed data,
+> tests, and domain ports — which must not change. Identified ~4 app-level references vs ~127 role
+> references. Renamed the folder, updated the package name, updated all documentation (README,
+> CLAUDE.md, docs/01/03/05/06/07/08/09/10) for app-level occurrences, and renamed the git branch
+> from `phase/9-marshal-pwa-ui` to `phase/9-employee-pwa-ui`. Left every `role: 'marshal'` and
+> `requireAdminOrMarshal` untouched.
+
+🎯 **DECISION.** The clean, unambiguous rule — *app name reflects the audience; role name reflects
+the permission level* — was already in the prompt. The agent applied it consistently without being
+asked to adjudicate individual cases.
+
+> **OUTCOME.** `apps/employee/` (`@pmg/employee`) in place of `apps/marshal/` (`@pmg/marshal`).
+> All 205 API tests still passing; full monorepo typecheck clean. The RBAC surface (`requireRole`,
+> seed data, domain ports) was unchanged — a grep for `@pmg/marshal` or `apps/marshal` returns
+> zero hits in the codebase.
+
+> **Why this example matters.** The steering pattern is different from all prior examples. Those
+> were about *design decisions made during specification* — reshaping a data model, adding a missing
+> use case, enforcing quality gates. This one is about **stopping a build and making a naming
+> correction before the name is embedded in dozens of source files**. The cost of the interrupt was
+> one cancelled shell command; the cost of fixing it after implementation would have been a
+> find-and-replace across generated code, test fixtures, and running processes. The pre-emption was
+> the right call, and its timing — after branch creation but before any file writes — was the
+> cheapest possible moment to make it.
+
+---
+
 ## What these examples demonstrate
 
 | Steering behaviour | Where |
@@ -311,6 +380,8 @@ improved both tooling visibility and code readability, not just the SonarCloud s
 | Using a third-party scanner (SonarCloud) as the objective quality standard, not vague "clean up" | 4a (🎯) |
 | Inviting assessment over compliance ("or tell me why it's OK") — produced a correct non-fix | 4b (🔁) |
 | Presenting findings in batches so each can be assessed in context, not rubber-stamped | 4c (🎯) |
+| Cancelling mid-start to fix a naming error before it was written into source files | 5a (🔁) |
+| Naming the app after its *audience*, not a privileged subset — with explicit reasoning | 5b (🎯) |
 
 The throughline: the agent did the breadth, drafting, and (when probed) the gap-spotting; I owned
 the **judgement** — where the box goes, which abstractions are honest, and when "just do it" should

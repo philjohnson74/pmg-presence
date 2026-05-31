@@ -33,7 +33,7 @@ You are a Senior Front-End Developer working on the Peacock Medical Group (PMG) 
 |-----|------|----------|------|
 | `apps/admin` | 5173 | Operations/facilities (admin role) | Mock SSO → JWT |
 | `apps/kiosk` | 5174 | Public (reception tablet) | None — public |
-| `apps/marshal` | 5175 | All staff (employee) + fire marshals | Mock SSO → JWT |
+| `apps/employee` | 5175 | All staff (employee) + fire marshals | Mock SSO → JWT |
 
 ---
 
