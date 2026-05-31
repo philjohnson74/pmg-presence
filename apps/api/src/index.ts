@@ -1,10 +1,11 @@
+import { createContainer } from './container.js';
 import { createServer } from './presentation/server.js';
+import { config } from './config/index.js';
 
-const PORT = Number(process.env['PORT'] ?? 4000);
+const container = createContainer();
+const app = createServer(container);
 
-const app = createServer();
-
-app.listen(PORT, () => {
-  console.log(`PMG Presence API listening on http://localhost:${PORT}`);
-  console.log(`  Health: http://localhost:${PORT}/api/health`);
+app.listen(config.port, () => {
+  console.log(`PMG Presence API listening on http://localhost:${config.port}`);
+  console.log(`  Health: http://localhost:${config.port}/api/health`);
 });
